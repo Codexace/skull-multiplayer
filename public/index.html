@@ -40,12 +40,12 @@
       radial-gradient(ellipse at 50% 80%, rgba(139,157,195,0.03) 0%, transparent 60%);
     pointer-events: none; z-index: 0;
   }
-  .container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 16px; min-height: 100vh; }
+  .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 24px; min-height: 100vh; }
 
   /* ── Title ── */
-  .title-bar { text-align: center; padding: 18px 0 8px; }
-  .title-bar h1 { font-family: 'Cinzel Decorative', serif; font-size: 2rem; color: var(--gold); letter-spacing: 0.15em; text-shadow: 0 0 30px rgba(212,168,67,0.2); }
-  .title-bar .sub { font-family: 'Cinzel', serif; font-size: 0.75rem; color: var(--text-dim); letter-spacing: 0.3em; margin-top: 2px; }
+  .title-bar { text-align: center; padding: 24px 0 12px; }
+  .title-bar h1 { font-family: 'Cinzel Decorative', serif; font-size: 2.8rem; color: var(--gold); letter-spacing: 0.15em; text-shadow: 0 0 30px rgba(212,168,67,0.2); }
+  .title-bar .sub { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--text-dim); letter-spacing: 0.3em; margin-top: 4px; }
 
   /* ── Screens ── */
   .screen { display: none; animation: fadeIn 0.4s ease; }
@@ -54,20 +54,20 @@
 
   /* ── Lobby ── */
   .lobby-box {
-    max-width: 420px; margin: 40px auto; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px; padding: 30px; text-align: center;
+    max-width: 480px; margin: 50px auto; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 36px; text-align: center;
   }
-  .lobby-box h2 { font-family: 'Cinzel Decorative', serif; font-size: 1.6rem; color: var(--gold); margin-bottom: 20px; }
+  .lobby-box h2 { font-family: 'Cinzel Decorative', serif; font-size: 1.9rem; color: var(--gold); margin-bottom: 24px; }
   .lobby-box input {
-    width: 100%; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); font-family: 'Crimson Text', serif; font-size: 1.1rem;
-    text-align: center; margin-bottom: 12px; outline: none; transition: border-color 0.2s;
+    width: 100%; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'Crimson Text', serif; font-size: 1.2rem;
+    text-align: center; margin-bottom: 14px; outline: none; transition: border-color 0.2s;
   }
   .lobby-box input:focus { border-color: var(--gold); }
   .lobby-box input::placeholder { color: var(--text-dim); }
   .lobby-box .or { color: var(--text-dim); margin: 16px 0; font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.2em; }
   .btn {
-    font-family: 'Cinzel', serif; font-size: 0.95rem; padding: 12px 30px; border-radius: 8px;
+    font-family: 'Cinzel', serif; font-size: 1.05rem; padding: 14px 34px; border-radius: 8px;
     cursor: pointer; transition: all 0.2s; letter-spacing: 0.06em; border: 1px solid var(--border);
     background: var(--surface2); color: var(--text); display: inline-block;
   }
@@ -76,40 +76,40 @@
   .btn.primary { background: linear-gradient(135deg, var(--gold-dim), var(--gold)); color: var(--bg); border: none; font-weight: 700; }
   .btn.primary:hover:not(:disabled) { color: var(--bg); box-shadow: 0 4px 20px rgba(212,168,67,0.3); }
   .btn.danger { border-color: var(--danger); color: var(--danger); }
-  .btn.sm { padding: 8px 18px; font-size: 0.85rem; }
+  .btn.sm { padding: 12px 24px; font-size: 1rem; }
   .error-msg { color: var(--danger); margin-top: 10px; font-size: 0.95rem; }
 
   /* ── Waiting Room ── */
   .room-code-display {
-    font-family: 'Cinzel Decorative', serif; font-size: 2.8rem; color: var(--gold);
-    letter-spacing: 0.3em; text-shadow: 0 0 30px rgba(212,168,67,0.3); margin: 10px 0;
+    font-family: 'Cinzel Decorative', serif; font-size: 3.2rem; color: var(--gold);
+    letter-spacing: 0.3em; text-shadow: 0 0 30px rgba(212,168,67,0.3); margin: 12px 0;
     cursor: pointer; user-select: all;
   }
   .room-code-display:hover { text-shadow: 0 0 40px rgba(212,168,67,0.5); }
-  .copy-hint { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 20px; }
-  .player-list { list-style: none; margin: 20px 0; }
+  .copy-hint { font-size: 0.95rem; color: var(--text-dim); margin-bottom: 24px; }
+  .player-list { list-style: none; margin: 24px 0; }
   .player-list li {
-    padding: 10px 16px; margin: 6px 0; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; font-family: 'Cinzel', serif; font-size: 1rem; display: flex;
+    padding: 12px 18px; margin: 8px 0; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; font-family: 'Cinzel', serif; font-size: 1.1rem; display: flex;
     justify-content: space-between; align-items: center;
   }
-  .player-list .host-badge { font-size: 0.75rem; color: var(--gold); letter-spacing: 0.1em; }
-  .player-list .you-badge { font-size: 0.75rem; color: var(--skull); letter-spacing: 0.1em; }
+  .player-list .host-badge { font-size: 0.85rem; color: var(--gold); letter-spacing: 0.1em; }
+  .player-list .you-badge { font-size: 0.85rem; color: var(--skull); letter-spacing: 0.1em; }
   .waiting-dots::after { content: ''; animation: dots 1.5s infinite; }
   @keyframes dots { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
 
   /* ── Game Board ── */
   .status-bar {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 18px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; margin-bottom: 12px;
+    padding: 14px 24px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 16px;
   }
-  .phase-label { font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--gold); letter-spacing: 0.08em; }
-  .round-label { font-size: 0.85rem; color: var(--text-dim); }
-  .bid-info { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--rose); }
+  .phase-label { font-family: 'Cinzel', serif; font-size: 1.15rem; color: var(--gold); letter-spacing: 0.08em; }
+  .round-label { font-size: 1.05rem; color: var(--text-dim); }
+  .bid-info { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--rose); }
 
   .message-area {
-    text-align: center; padding: 12px; min-height: 44px; font-size: 1.05rem; line-height: 1.5;
+    text-align: center; padding: 16px; min-height: 56px; font-size: 1.3rem; line-height: 1.5;
   }
   .hl { color: var(--gold); font-weight: 600; }
   .rose-hl { color: var(--rose); }
@@ -117,11 +117,11 @@
 
   /* ── Player Zones ── */
   .players-grid {
-    display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 14px;
+    display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-bottom: 18px;
   }
   .player-zone {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 16px; min-width: 150px; flex: 1; max-width: 220px; transition: all 0.3s;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 22px; min-width: 200px; flex: 1; max-width: 280px; transition: all 0.3s;
     position: relative;
   }
   .player-zone.is-me { border-color: var(--gold-dim); }
@@ -129,61 +129,61 @@
   .player-zone.eliminated { opacity: 0.3; }
   .player-zone.disconnected { opacity: 0.5; }
   .pz-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
   }
-  .pz-name { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--text-dim); }
+  .pz-name { font-family: 'Cinzel', serif; font-size: 1.05rem; color: var(--text-dim); }
   .pz-name.is-me-name { color: var(--gold); }
-  .pz-wins { display: flex; gap: 4px; }
+  .pz-wins { display: flex; gap: 5px; }
   .win-pip {
-    width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--gold-dim); background: transparent;
+    width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--gold-dim); background: transparent;
   }
-  .win-pip.earned { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 6px rgba(212,168,67,0.5); }
-  .pz-cards-info { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; }
+  .win-pip.earned { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 8px rgba(212,168,67,0.5); }
+  .pz-cards-info { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 8px; }
 
-  .stack-row { display: flex; gap: 5px; justify-content: center; min-height: 44px; align-items: center; flex-wrap: wrap; }
+  .stack-row { display: flex; gap: 8px; justify-content: center; min-height: 60px; align-items: center; flex-wrap: wrap; }
 
   .coaster {
-    width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; transition: all 0.3s; position: relative; cursor: default;
+    width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; transition: all 0.3s; position: relative; cursor: default;
   }
   .coaster.facedown { background: var(--surface2); border: 2px solid var(--border); box-shadow: inset 0 0 6px rgba(0,0,0,0.3); }
-  .coaster.facedown::after { content: '?'; color: var(--text-dim); font-family: 'Cinzel Decorative', serif; font-size: 0.85rem; }
-  .coaster.rose { background: radial-gradient(circle, var(--rose), var(--rose-dark)); border: 2px solid var(--rose); box-shadow: 0 0 8px rgba(196,69,105,0.3); }
-  .coaster.rose::after { content: '🌹'; }
-  .coaster.skull { background: radial-gradient(circle, var(--skull), var(--skull-dark)); border: 2px solid var(--skull); box-shadow: 0 0 8px rgba(139,157,195,0.3); }
-  .coaster.skull::after { content: '💀'; }
+  .coaster.facedown::after { content: '?'; color: var(--text-dim); font-family: 'Cinzel Decorative', serif; font-size: 1.1rem; }
+  .coaster.rose { background: radial-gradient(circle, var(--rose), var(--rose-dark)); border: 2px solid var(--rose); box-shadow: 0 0 10px rgba(196,69,105,0.3); }
+  .coaster.rose::after { content: '🌹'; font-size: 1.4rem; }
+  .coaster.skull { background: radial-gradient(circle, var(--skull), var(--skull-dark)); border: 2px solid var(--skull); box-shadow: 0 0 10px rgba(139,157,195,0.3); }
+  .coaster.skull::after { content: '💀'; font-size: 1.4rem; }
   .coaster.in-hand { background: var(--surface2); border: 2px dashed var(--border); opacity: 0.3; }
   .coaster.in-hand::after { content: ''; }
   .coaster.flippable { cursor: pointer; animation: pulse 1.5s infinite; }
-  .coaster.flippable:hover { transform: scale(1.15); box-shadow: 0 0 12px rgba(212,168,67,0.4); border-color: var(--gold); }
+  .coaster.flippable:hover { transform: scale(1.15); box-shadow: 0 0 14px rgba(212,168,67,0.4); border-color: var(--gold); }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(212,168,67,0.2); } 50% { box-shadow: 0 0 0 5px rgba(212,168,67,0); } }
 
   /* ── Your Hand ── */
   .your-hand-section {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-    padding: 16px; margin-top: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; margin-top: 16px;
   }
-  .your-hand-section.your-turn { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,168,67,0.1); }
-  .your-hand-label { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold); margin-bottom: 10px; text-align: center; letter-spacing: 0.06em; }
-  .hand-cards { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .your-hand-section.your-turn { border-color: var(--gold); box-shadow: 0 0 24px rgba(212,168,67,0.1); }
+  .your-hand-label { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold); margin-bottom: 14px; text-align: center; letter-spacing: 0.06em; }
+  .hand-cards { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
 
   .hand-card {
-    width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 1.8rem; cursor: pointer; transition: all 0.25s;
+    width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 2.6rem; cursor: pointer; transition: all 0.25s;
   }
-  .hand-card.rose-card { background: radial-gradient(circle, rgba(196,69,105,0.2), rgba(196,69,105,0.05)); border: 2px solid var(--rose-dark); }
-  .hand-card.rose-card:hover:not(.disabled) { border-color: var(--rose); transform: translateY(-5px); box-shadow: 0 6px 20px rgba(196,69,105,0.25); }
-  .hand-card.skull-card { background: radial-gradient(circle, rgba(139,157,195,0.2), rgba(139,157,195,0.05)); border: 2px solid var(--skull-dark); }
-  .hand-card.skull-card:hover:not(.disabled) { border-color: var(--skull); transform: translateY(-5px); box-shadow: 0 6px 20px rgba(139,157,195,0.25); }
+  .hand-card.rose-card { background: radial-gradient(circle, rgba(196,69,105,0.2), rgba(196,69,105,0.05)); border: 2.5px solid var(--rose-dark); }
+  .hand-card.rose-card:hover:not(.disabled) { border-color: var(--rose); transform: translateY(-6px); box-shadow: 0 8px 24px rgba(196,69,105,0.25); }
+  .hand-card.skull-card { background: radial-gradient(circle, rgba(139,157,195,0.2), rgba(139,157,195,0.05)); border: 2.5px solid var(--skull-dark); }
+  .hand-card.skull-card:hover:not(.disabled) { border-color: var(--skull); transform: translateY(-6px); box-shadow: 0 8px 24px rgba(139,157,195,0.25); }
   .hand-card.disabled { opacity: 0.2; cursor: not-allowed; }
 
   /* ── Actions ── */
-  .actions-bar { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; align-items: center; }
-  .bid-controls { display: flex; align-items: center; gap: 10px; }
-  .bid-number { font-family: 'Cinzel Decorative', serif; font-size: 1.8rem; color: var(--gold); min-width: 40px; text-align: center; }
+  .actions-bar { display: flex; gap: 14px; justify-content: center; margin-top: 18px; flex-wrap: wrap; align-items: center; }
+  .bid-controls { display: flex; align-items: center; gap: 14px; }
+  .bid-number { font-family: 'Cinzel Decorative', serif; font-size: 2.4rem; color: var(--gold); min-width: 50px; text-align: center; }
   .bid-arrow {
-    width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    width: 46px; height: 46px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
   }
   .bid-arrow:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
@@ -191,21 +191,21 @@
 
   /* ── Revealed Cards ── */
   .revealed-area {
-    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 10px 0;
+    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 14px 0;
     min-height: 0;
   }
   .revealed-card {
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
     animation: revealPop 0.4s ease;
   }
-  .revealed-card .rc-name { font-size: 0.7rem; color: var(--text-dim); font-family: 'Cinzel', serif; }
+  .revealed-card .rc-name { font-size: 0.85rem; color: var(--text-dim); font-family: 'Cinzel', serif; }
   @keyframes revealPop { from { transform: scale(0.5) rotateY(90deg); opacity: 0; } to { transform: scale(1) rotateY(0); opacity: 1; } }
 
   /* ── Game Log ── */
   .game-log {
-    margin-top: 16px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; max-height: 130px; overflow-y: auto; font-size: 0.8rem;
-    color: var(--text-dim); line-height: 1.7;
+    margin-top: 20px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; max-height: 160px; overflow-y: auto; font-size: 0.95rem;
+    color: var(--text-dim); line-height: 1.8;
   }
   .game-log::-webkit-scrollbar { width: 4px; }
   .game-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -216,8 +216,8 @@
     justify-content: center; align-items: center; flex-direction: column; gap: 20px;
   }
   .win-overlay.active { display: flex; animation: fadeIn 0.5s ease; }
-  .win-overlay h2 { font-family: 'Cinzel Decorative', serif; font-size: 2.6rem; color: var(--gold); text-shadow: 0 0 50px rgba(212,168,67,0.4); }
-  .win-overlay p { font-size: 1.15rem; color: var(--text-dim); }
+  .win-overlay h2 { font-family: 'Cinzel Decorative', serif; font-size: 3.4rem; color: var(--gold); text-shadow: 0 0 50px rgba(212,168,67,0.4); }
+  .win-overlay p { font-size: 1.4rem; color: var(--text-dim); }
 
   /* ── Rules ── */
   .rules-btn {
@@ -237,10 +237,13 @@
   .rules-content .close-rules { float: right; background: none; border: none; color: var(--text-dim); font-size: 1.3rem; cursor: pointer; }
 
   @media (max-width: 600px) {
-    .title-bar h1 { font-size: 1.4rem; }
-    .room-code-display { font-size: 2rem; }
-    .player-zone { min-width: 120px; padding: 10px; }
-    .hand-card { width: 60px; height: 60px; font-size: 1.5rem; }
+    .title-bar h1 { font-size: 1.6rem; }
+    .room-code-display { font-size: 2.2rem; }
+    .player-zone { min-width: 130px; padding: 12px; }
+    .hand-card { width: 72px; height: 72px; font-size: 1.8rem; }
+    .coaster { width: 44px; height: 44px; }
+    .message-area { font-size: 1.05rem; }
+    .btn.sm { padding: 10px 18px; font-size: 0.9rem; }
   }
 </style>
 </head>
@@ -333,7 +336,7 @@
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
 const socket = io();
 let state = null;
@@ -467,12 +470,13 @@ function renderMessage(me, isMyTurn) {
         : `Waiting for <span class="hl">${turnPlayer.name}</span> to place or bid...`;
     }
   } else if (state.phase === 'bidding') {
-    if (isMyTurn && !me.passed) {
-      area.innerHTML = `Current bid: <span class="hl">${state.currentBid}</span>. Raise or pass.`;
-    } else if (me.passed) {
-      area.innerHTML = `You passed. Waiting for <span class="hl">${turnPlayer.name}</span>...`;
+    const bidder = state.players[state.highestBidder];
+    if (me.passed) {
+      area.innerHTML = `You passed. Current bid: <span class="hl">${state.currentBid}</span> by <span class="hl">${bidder?.name}</span>. Waiting for others...`;
+    } else if (state.myIndex === state.highestBidder) {
+      area.innerHTML = `Your bid of <span class="hl">${state.currentBid}</span> is the highest. Waiting for others to raise or pass...`;
     } else {
-      area.innerHTML = `Waiting for <span class="hl">${turnPlayer.name}</span> to bid or pass...`;
+      area.innerHTML = `<span class="hl">${bidder?.name}</span> bid <span class="hl">${state.currentBid}</span>. Raise or pass!`;
     }
   } else if (state.phase === 'flipping') {
     const flipper = state.players[state.highestBidder];
@@ -508,7 +512,8 @@ function renderPlayersGrid(me, isMyTurn) {
 
     const zone = document.createElement('div');
     let cls = 'player-zone';
-    if (state.currentPlayer === i) cls += ' active-turn';
+    const isActiveTurn = state.phase === 'bidding' ? i === state.highestBidder : state.currentPlayer === i;
+    if (isActiveTurn) cls += ' active-turn';
     if (p.eliminated) cls += ' eliminated';
     if (!p.connected) cls += ' disconnected';
     zone.className = cls;
@@ -557,7 +562,10 @@ function renderPlayersGrid(me, isMyTurn) {
 
 function renderYourHand(me, isMyTurn) {
   const section = document.getElementById('yourSection');
-  section.className = 'your-hand-section' + (isMyTurn ? ' your-turn' : '');
+  const isMyTurnHighlight = state.phase === 'bidding'
+    ? (state.myIndex === state.highestBidder)
+    : isMyTurn;
+  section.className = 'your-hand-section' + (isMyTurnHighlight ? ' your-turn' : '');
 
   // Hand cards
   const handEl = document.getElementById('yourHand');
@@ -609,19 +617,46 @@ function renderActions(me, isMyTurn) {
 
   if (me.eliminated) return;
 
-  // Placing: show "Start Bid" button
+  // Placing: show "Start Bid" with amount picker
   if (state.phase === 'placing' && isMyTurn) {
     if (!state.firstPlacement && me.stackCount > 0) {
+      const maxBid = state.totalCoastersOnTable;
+      selectedBid = Math.max(1, Math.min(selectedBid, maxBid));
+
+      if (maxBid >= 1) {
+        const controls = document.createElement('div');
+        controls.className = 'bid-controls';
+
+        const down = document.createElement('button');
+        down.className = 'bid-arrow';
+        down.innerHTML = '◀';
+        down.disabled = selectedBid <= 1;
+        down.onclick = () => { if (selectedBid > 1) { selectedBid--; renderActions(me, isMyTurn); } };
+
+        const num = document.createElement('div');
+        num.className = 'bid-number';
+        num.textContent = selectedBid;
+
+        const up = document.createElement('button');
+        up.className = 'bid-arrow';
+        up.innerHTML = '▶';
+        up.disabled = selectedBid >= maxBid;
+        up.onclick = () => { if (selectedBid < maxBid) { selectedBid++; renderActions(me, isMyTurn); } };
+
+        controls.append(down, num, up);
+        bar.appendChild(controls);
+      }
+
       const btn = document.createElement('button');
       btn.className = 'btn primary sm';
       btn.textContent = 'START BIDDING';
-      btn.onclick = () => socket.emit('startBid');
+      btn.onclick = () => socket.emit('startBid', selectedBid);
       bar.appendChild(btn);
     }
   }
 
-  // Bidding: bid controls
-  if (state.phase === 'bidding' && isMyTurn && !me.passed) {
+  // Bidding: free-for-all — show bid/pass for anyone who hasn't passed and isn't the highest bidder
+  if (state.phase === 'bidding' && !me.passed && !me.eliminated && state.myIndex !== state.highestBidder) {
     const minBid = state.currentBid + 1;
     const maxBid = state.totalCoastersOnTable;
     selectedBid = Math.max(selectedBid, minBid);

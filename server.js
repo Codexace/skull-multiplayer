@@ -187,25 +187,23 @@ function advancePlacing(room) {
   broadcastState(room);
 }
 
-function handleStartBid(room, pIdx) {
+function handleStartBid(room, pIdx, amount) {
   if (room.phase !== 'placing') return;
   if (room.currentPlayer !== pIdx) return;
   const p = room.players[pIdx];
   if (room.firstPlacement) return;
 
+  const maxBid = countOnTable(room);
+  const bidAmount = Math.max(1, Math.min(amount || 1, maxBid));
+
   room.phase = 'bidding';
-  room.currentBid = 1;
+  room.currentBid = bidAmount;
   room.highestBidder = pIdx;
   room.players.forEach(pl => pl.passed = false);
   players_passed_set_bidder(room, pIdx);
 
-  addLog(room, `${p.name} opened bidding at 1.`);
-  room.currentPlayer = nextActiveUnpassed(room, pIdx);
-  if (room.currentPlayer === -1 || room.currentPlayer === pIdx) {
-    // Only one active player or wrapped around
-    startFlipping(room);
-    return;
-  }
+  addLog(room, `${p.name} opened bidding at ${bidAmount}.`);
+  room.currentPlayer = -1; // no turn order in bidding
   checkBiddingEnd(room);
 }
 
@@ -218,38 +216,33 @@ function players_passed_set_bidder(room, bidderIdx) {
 
 function handleRaiseBid(room, pIdx, amount) {
   if (room.phase !== 'bidding') return;
-  if (room.currentPlayer !== pIdx) return;
   const p = room.players[pIdx];
   if (p.passed || p.eliminated) return;
+  if (pIdx === room.highestBidder) return; // can't outbid yourself
   if (amount <= room.currentBid || amount > room.totalCoastersOnTable) return;
 
   room.currentBid = amount;
   room.highestBidder = pIdx;
   addLog(room, `${p.name} bid ${amount}.`);
-  room.currentPlayer = nextActiveUnpassed(room, pIdx);
   checkBiddingEnd(room);
 }
 
 function handlePass(room, pIdx) {
   if (room.phase !== 'bidding') return;
-  if (room.currentPlayer !== pIdx) return;
   const p = room.players[pIdx];
-  if (p.passed) return;
+  if (p.passed || p.eliminated) return;
+  if (pIdx === room.highestBidder) return; // current highest bidder can't pass
 
   p.passed = true;
   addLog(room, `${p.name} passed.`);
-  room.currentPlayer = nextActiveUnpassed(room, pIdx);
   checkBiddingEnd(room);
 }
 
 function checkBiddingEnd(room) {
-  const active = room.players.filter(p => !p.eliminated && !p.passed);
-  if (active.length <= 1 || room.currentBid >= room.totalCoastersOnTable || room.currentPlayer === -1) {
-    startFlipping(room);
-    return;
-  }
-  // If wrapped back to bidder and they're the only unpassed
-  if (room.currentPlayer === room.highestBidder) {
+  // Bidding ends when all players except the highest bidder have passed,
+  // or the bid equals total coasters on table
+  const active = room.players.filter((p, i) => !p.eliminated && !p.passed && i !== room.highestBidder);
+  if (active.length === 0 || room.currentBid >= room.totalCoastersOnTable) {
     startFlipping(room);
     return;
   }
@@ -320,7 +313,7 @@ function penalize(room, loserIdx, skullerIdx) {
   if (p.cards.length > 0) {
     const removeIdx = Math.floor(Math.random() * p.cards.length);
     const removed = p.cards.splice(removeIdx, 1)[0];
-    addLog(room, `${p.name} permanently loses a coaster (${removed === 'skull' ? '💀' : '🌹'}). ${p.cards.length} remaining.`);
+    addLog(room, `${p.name} loses a coaster. ${p.cards.length} remaining.`);
   }
   if (p.cards.length === 0) {
     p.eliminated = true;
@@ -406,12 +399,12 @@ io.on('connection', (socket) => {
     handlePlace(room, pIdx, cardIndex);
   });
 
-  socket.on('startBid', () => {
+  socket.on('startBid', (amount) => {
     const room = getRoom(socket);
     if (!room || !room.started) return;
     const pIdx = playerIndex(room, socket.id);
     if (pIdx === -1) return;
-    handleStartBid(room, pIdx);
+    handleStartBid(room, pIdx, amount);
   });
 
   socket.on('raiseBid', (amount) => {
