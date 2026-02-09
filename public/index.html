@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKULL — Multiplayer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --gold: #d4a843;
+    --gold-dim: #8a6d2b;
+    --rose: #c44569;
+    --rose-dark: #7a2a40;
+    --skull: #8b9dc3;
+    --skull-dark: #4a5570;
+    --text: #e8e4dc;
+    --text-dim: #7a7680;
+    --danger: #e74c3c;
+    --success: #2ecc71;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Text', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(212,168,67,0.03) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(196,69,105,0.03) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 80%, rgba(139,157,195,0.03) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 16px; min-height: 100vh; }
+
+  /* ── Title ── */
+  .title-bar { text-align: center; padding: 18px 0 8px; }
+  .title-bar h1 { font-family: 'Cinzel Decorative', serif; font-size: 2rem; color: var(--gold); letter-spacing: 0.15em; text-shadow: 0 0 30px rgba(212,168,67,0.2); }
+  .title-bar .sub { font-family: 'Cinzel', serif; font-size: 0.75rem; color: var(--text-dim); letter-spacing: 0.3em; margin-top: 2px; }
+
+  /* ── Screens ── */
+  .screen { display: none; animation: fadeIn 0.4s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Lobby ── */
+  .lobby-box {
+    max-width: 420px; margin: 40px auto; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 30px; text-align: center;
+  }
+  .lobby-box h2 { font-family: 'Cinzel Decorative', serif; font-size: 1.6rem; color: var(--gold); margin-bottom: 20px; }
+  .lobby-box input {
+    width: 100%; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'Crimson Text', serif; font-size: 1.1rem;
+    text-align: center; margin-bottom: 12px; outline: none; transition: border-color 0.2s;
+  }
+  .lobby-box input:focus { border-color: var(--gold); }
+  .lobby-box input::placeholder { color: var(--text-dim); }
+  .lobby-box .or { color: var(--text-dim); margin: 16px 0; font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.2em; }
+  .btn {
+    font-family: 'Cinzel', serif; font-size: 0.95rem; padding: 12px 30px; border-radius: 8px;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.06em; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); display: inline-block;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn.primary { background: linear-gradient(135deg, var(--gold-dim), var(--gold)); color: var(--bg); border: none; font-weight: 700; }
+  .btn.primary:hover:not(:disabled) { color: var(--bg); box-shadow: 0 4px 20px rgba(212,168,67,0.3); }
+  .btn.danger { border-color: var(--danger); color: var(--danger); }
+  .btn.sm { padding: 8px 18px; font-size: 0.85rem; }
+  .error-msg { color: var(--danger); margin-top: 10px; font-size: 0.95rem; }
+
+  /* ── Waiting Room ── */
+  .room-code-display {
+    font-family: 'Cinzel Decorative', serif; font-size: 2.8rem; color: var(--gold);
+    letter-spacing: 0.3em; text-shadow: 0 0 30px rgba(212,168,67,0.3); margin: 10px 0;
+    cursor: pointer; user-select: all;
+  }
+  .room-code-display:hover { text-shadow: 0 0 40px rgba(212,168,67,0.5); }
+  .copy-hint { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 20px; }
+  .player-list { list-style: none; margin: 20px 0; }
+  .player-list li {
+    padding: 10px 16px; margin: 6px 0; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; font-family: 'Cinzel', serif; font-size: 1rem; display: flex;
+    justify-content: space-between; align-items: center;
+  }
+  .player-list .host-badge { font-size: 0.75rem; color: var(--gold); letter-spacing: 0.1em; }
+  .player-list .you-badge { font-size: 0.75rem; color: var(--skull); letter-spacing: 0.1em; }
+  .waiting-dots::after { content: ''; animation: dots 1.5s infinite; }
+  @keyframes dots { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
+
+  /* ── Game Board ── */
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 18px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 12px;
+  }
+  .phase-label { font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--gold); letter-spacing: 0.08em; }
+  .round-label { font-size: 0.85rem; color: var(--text-dim); }
+  .bid-info { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--rose); }
+
+  .message-area {
+    text-align: center; padding: 12px; min-height: 44px; font-size: 1.05rem; line-height: 1.5;
+  }
+  .hl { color: var(--gold); font-weight: 600; }
+  .rose-hl { color: var(--rose); }
+  .skull-hl { color: var(--skull); }
+
+  /* ── Player Zones ── */
+  .players-grid {
+    display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 14px;
+  }
+  .player-zone {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; min-width: 150px; flex: 1; max-width: 220px; transition: all 0.3s;
+    position: relative;
+  }
+  .player-zone.is-me { border-color: var(--gold-dim); }
+  .player-zone.active-turn { border-color: var(--gold); box-shadow: 0 0 18px rgba(212,168,67,0.12); }
+  .player-zone.eliminated { opacity: 0.3; }
+  .player-zone.disconnected { opacity: 0.5; }
+  .pz-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+  }
+  .pz-name { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--text-dim); }
+  .pz-name.is-me-name { color: var(--gold); }
+  .pz-wins { display: flex; gap: 4px; }
+  .win-pip {
+    width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--gold-dim); background: transparent;
+  }
+  .win-pip.earned { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 6px rgba(212,168,67,0.5); }
+  .pz-cards-info { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; }
+
+  .stack-row { display: flex; gap: 5px; justify-content: center; min-height: 44px; align-items: center; flex-wrap: wrap; }
+
+  .coaster {
+    width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; transition: all 0.3s; position: relative; cursor: default;
+  }
+  .coaster.facedown { background: var(--surface2); border: 2px solid var(--border); box-shadow: inset 0 0 6px rgba(0,0,0,0.3); }
+  .coaster.facedown::after { content: '?'; color: var(--text-dim); font-family: 'Cinzel Decorative', serif; font-size: 0.85rem; }
+  .coaster.rose { background: radial-gradient(circle, var(--rose), var(--rose-dark)); border: 2px solid var(--rose); box-shadow: 0 0 8px rgba(196,69,105,0.3); }
+  .coaster.rose::after { content: '🌹'; }
+  .coaster.skull { background: radial-gradient(circle, var(--skull), var(--skull-dark)); border: 2px solid var(--skull); box-shadow: 0 0 8px rgba(139,157,195,0.3); }
+  .coaster.skull::after { content: '💀'; }
+  .coaster.in-hand { background: var(--surface2); border: 2px dashed var(--border); opacity: 0.3; }
+  .coaster.in-hand::after { content: ''; }
+  .coaster.flippable { cursor: pointer; animation: pulse 1.5s infinite; }
+  .coaster.flippable:hover { transform: scale(1.15); box-shadow: 0 0 12px rgba(212,168,67,0.4); border-color: var(--gold); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(212,168,67,0.2); } 50% { box-shadow: 0 0 0 5px rgba(212,168,67,0); } }
+
+  /* ── Your Hand ── */
+  .your-hand-section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; margin-top: 12px;
+  }
+  .your-hand-section.your-turn { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,168,67,0.1); }
+  .your-hand-label { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold); margin-bottom: 10px; text-align: center; letter-spacing: 0.06em; }
+  .hand-cards { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  .hand-card {
+    width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; cursor: pointer; transition: all 0.25s;
+  }
+  .hand-card.rose-card { background: radial-gradient(circle, rgba(196,69,105,0.2), rgba(196,69,105,0.05)); border: 2px solid var(--rose-dark); }
+  .hand-card.rose-card:hover:not(.disabled) { border-color: var(--rose); transform: translateY(-5px); box-shadow: 0 6px 20px rgba(196,69,105,0.25); }
+  .hand-card.skull-card { background: radial-gradient(circle, rgba(139,157,195,0.2), rgba(139,157,195,0.05)); border: 2px solid var(--skull-dark); }
+  .hand-card.skull-card:hover:not(.disabled) { border-color: var(--skull); transform: translateY(-5px); box-shadow: 0 6px 20px rgba(139,157,195,0.25); }
+  .hand-card.disabled { opacity: 0.2; cursor: not-allowed; }
+
+  /* ── Actions ── */
+  .actions-bar { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .bid-controls { display: flex; align-items: center; gap: 10px; }
+  .bid-number { font-family: 'Cinzel Decorative', serif; font-size: 1.8rem; color: var(--gold); min-width: 40px; text-align: center; }
+  .bid-arrow {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .bid-arrow:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .bid-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── Revealed Cards ── */
+  .revealed-area {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 10px 0;
+    min-height: 0;
+  }
+  .revealed-card {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    animation: revealPop 0.4s ease;
+  }
+  .revealed-card .rc-name { font-size: 0.7rem; color: var(--text-dim); font-family: 'Cinzel', serif; }
+  @keyframes revealPop { from { transform: scale(0.5) rotateY(90deg); opacity: 0; } to { transform: scale(1) rotateY(0); opacity: 1; } }
+
+  /* ── Game Log ── */
+  .game-log {
+    margin-top: 16px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; max-height: 130px; overflow-y: auto; font-size: 0.8rem;
+    color: var(--text-dim); line-height: 1.7;
+  }
+  .game-log::-webkit-scrollbar { width: 4px; }
+  .game-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── Win Overlay ── */
+  .win-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(10,10,15,0.92); z-index: 100;
+    justify-content: center; align-items: center; flex-direction: column; gap: 20px;
+  }
+  .win-overlay.active { display: flex; animation: fadeIn 0.5s ease; }
+  .win-overlay h2 { font-family: 'Cinzel Decorative', serif; font-size: 2.6rem; color: var(--gold); text-shadow: 0 0 50px rgba(212,168,67,0.4); }
+  .win-overlay p { font-size: 1.15rem; color: var(--text-dim); }
+
+  /* ── Rules ── */
+  .rules-btn {
+    position: fixed; bottom: 18px; right: 18px; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+    font-family: 'Cinzel', serif; font-size: 1rem; cursor: pointer; z-index: 50; transition: all 0.2s;
+  }
+  .rules-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .rules-modal { display: none; position: fixed; inset: 0; background: rgba(10,10,15,0.9); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+  .rules-modal.active { display: flex; }
+  .rules-content {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px;
+    max-width: 520px; max-height: 80vh; overflow-y: auto; line-height: 1.7; font-size: 0.92rem;
+  }
+  .rules-content h3 { font-family: 'Cinzel', serif; color: var(--gold); margin: 14px 0 6px; font-size: 1rem; }
+  .rules-content h3:first-child { margin-top: 0; }
+  .rules-content .close-rules { float: right; background: none; border: none; color: var(--text-dim); font-size: 1.3rem; cursor: pointer; }
+
+  @media (max-width: 600px) {
+    .title-bar h1 { font-size: 1.4rem; }
+    .room-code-display { font-size: 2rem; }
+    .player-zone { min-width: 120px; padding: 10px; }
+    .hand-card { width: 60px; height: 60px; font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="title-bar">
+    <h1>☠ SKULL ☠</h1>
+    <div class="sub">MULTIPLAYER BLUFFING</div>
+  </div>
+
+  <!-- ── Lobby Screen ── -->
+  <div class="screen active" id="lobbyScreen">
+    <div class="lobby-box">
+      <h2>ENTER</h2>
+      <input type="text" id="nameInput" placeholder="Your name" maxlength="16" autocomplete="off">
+      <br>
+      <button class="btn primary" onclick="createRoom()" style="width:100%">CREATE ROOM</button>
+      <div class="or">— OR JOIN —</div>
+      <input type="text" id="codeInput" placeholder="Room code" maxlength="4" autocomplete="off" style="text-transform:uppercase; letter-spacing:0.3em; font-family:'Cinzel',serif; font-size:1.3rem;">
+      <br>
+      <button class="btn" onclick="joinRoom()" style="width:100%">JOIN ROOM</button>
+      <div class="error-msg" id="lobbyError"></div>
+    </div>
+  </div>
+
+  <!-- ── Waiting Room ── -->
+  <div class="screen" id="waitingScreen">
+    <div class="lobby-box">
+      <h2>ROOM</h2>
+      <div class="room-code-display" id="roomCodeDisplay" onclick="copyCode()"></div>
+      <div class="copy-hint">Click code to copy · Share with friends</div>
+      <ul class="player-list" id="playerList"></ul>
+      <div id="waitingStatus" style="color:var(--text-dim); margin-bottom:14px;">
+        Waiting for players<span class="waiting-dots"></span>
+      </div>
+      <button class="btn primary" id="startGameBtn" onclick="socket.emit('startGame')" disabled>START GAME</button>
+    </div>
+  </div>
+
+  <!-- ── Game Screen ── -->
+  <div class="screen" id="gameScreen">
+    <div class="status-bar">
+      <span class="phase-label" id="phaseLabel"></span>
+      <span class="bid-info" id="bidInfo"></span>
+      <span class="round-label" id="roundLabel"></span>
+    </div>
+    <div class="message-area" id="messageArea"></div>
+
+    <!-- Revealed flips -->
+    <div class="revealed-area" id="revealedArea"></div>
+
+    <!-- Other players -->
+    <div class="players-grid" id="playersGrid"></div>
+
+    <!-- Your hand & actions -->
+    <div class="your-hand-section" id="yourSection">
+      <div class="your-hand-label">YOUR HAND</div>
+      <div class="hand-cards" id="yourHand"></div>
+      <div class="stack-row" id="yourStack" style="margin-top:10px;"></div>
+      <div class="actions-bar" id="actionsBar"></div>
+    </div>
+
+    <div class="game-log" id="gameLog"></div>
+  </div>
+
+  <!-- ── Win Overlay ── -->
+  <div class="win-overlay" id="winOverlay">
+    <h2 id="winTitle"></h2>
+    <p id="winSubtitle"></p>
+    <button class="btn primary" id="playAgainBtn" style="display:none" onclick="socket.emit('playAgain')">PLAY AGAIN</button>
+    <button class="btn" onclick="document.getElementById('winOverlay').classList.remove('active')">CLOSE</button>
+  </div>
+</div>
+
+<button class="rules-btn" onclick="toggleRules()" title="Rules">?</button>
+<div class="rules-modal" id="rulesModal">
+  <div class="rules-content">
+    <button class="close-rules" onclick="toggleRules()">✕</button>
+    <h3>How to Play Skull</h3>
+    Each player has 4 coasters: 3 Roses 🌹 and 1 Skull 💀. The goal is to win 2 challenges.
+    <h3>Placing Phase</h3>
+    Players take turns placing one coaster face-down onto their stack. Everyone must place at least one before anyone can bid.
+    <h3>Bidding Phase</h3>
+    Instead of placing, you may start a bid — declaring how many coasters you can flip without hitting a skull. Others then raise or pass. The highest bidder must flip that many.
+    <h3>Flipping</h3>
+    The challenger must flip all their own coasters first, then choose from opponents' stacks (top card only). Reveal a Rose? Keep going. Reveal a Skull? You lose — one of your coasters is permanently discarded at random.
+    <h3>Winning</h3>
+    Flip your full bid count to earn a point. First to 2 points wins. Lose all coasters and you're eliminated.
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let state = null;
+let selectedBid = 1;
+
+// ── Lobby ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function createRoom() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) { showError('Enter your name.'); return; }
+  socket.emit('createRoom', name, (res) => {
+    if (res.success) {
+      showScreen('waitingScreen');
+      document.getElementById('roomCodeDisplay').textContent = res.code;
+    } else showError(res.error);
+  });
+}
+
+function joinRoom() {
+  const name = document.getElementById('nameInput').value.trim();
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  if (!name) { showError('Enter your name.'); return; }
+  if (!code || code.length !== 4) { showError('Enter a 4-letter room code.'); return; }
+  socket.emit('joinRoom', { name, code }, (res) => {
+    if (res.success) {
+      showScreen('waitingScreen');
+      document.getElementById('roomCodeDisplay').textContent = res.code;
+    } else showError(res.error);
+  });
+}
+
+function showError(msg) { document.getElementById('lobbyError').textContent = msg; }
+
+function copyCode() {
+  const code = document.getElementById('roomCodeDisplay').textContent;
+  navigator.clipboard.writeText(code).catch(() => {});
+}
+
+// ── Game State ──
+socket.on('gameState', (s) => {
+  state = s;
+  if (!s.started) {
+    renderWaiting();
+  } else {
+    showScreen('gameScreen');
+    renderGame();
+  }
+});
+
+socket.on('message', (msg) => {
+  // Messages also come via log in state
+});
+
+socket.on('gameOver', ({ winnerName, winnerIndex }) => {
+  const overlay = document.getElementById('winOverlay');
+  const isMe = state && state.myIndex === winnerIndex;
+  document.getElementById('winTitle').textContent = isMe ? '🏆 VICTORY!' : '💀 DEFEAT';
+  document.getElementById('winSubtitle').textContent = isMe ? 'You have proven your nerve!' : `${winnerName} claims the victory.`;
+  document.getElementById('playAgainBtn').style.display = state.isHost ? 'inline-block' : 'none';
+  overlay.classList.add('active');
+});
+
+// ── Waiting Room Render ──
+function renderWaiting() {
+  showScreen('waitingScreen');
+  const list = document.getElementById('playerList');
+  list.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const li = document.createElement('li');
+    let badges = '';
+    if (i === 0) badges += '<span class="host-badge">HOST</span> ';
+    if (p.isMe) badges += '<span class="you-badge">YOU</span>';
+    li.innerHTML = `<span>${p.name}</span><span>${badges}</span>`;
+    list.appendChild(li);
+  });
+  const btn = document.getElementById('startGameBtn');
+  btn.disabled = !(state.isHost && state.players.length >= 2);
+  btn.textContent = state.isHost ? (state.players.length < 2 ? 'NEED 2+ PLAYERS' : 'START GAME') : 'WAITING FOR HOST';
+}
+
+// ── Game Render ──
+function renderGame() {
+  if (!state) return;
+  const me = state.players[state.myIndex];
+  const isMyTurn = state.currentPlayer === state.myIndex;
+
+  // Status bar
+  const phaseNames = { placing: 'Placing Phase', bidding: 'Bidding Phase', flipping: 'Flipping Phase', gameover: 'Game Over' };
+  document.getElementById('phaseLabel').textContent = phaseNames[state.phase] || '';
+  document.getElementById('roundLabel').textContent = `Round ${state.roundNum}`;
+  document.getElementById('bidInfo').textContent = state.phase === 'bidding' || state.phase === 'flipping' ?
+    `Bid: ${state.currentBid} by ${state.players[state.highestBidder]?.name || '?'}` : '';
+
+  // Message
+  renderMessage(me, isMyTurn);
+
+  // Revealed cards
+  renderRevealed();
+
+  // Players grid (all players including me)
+  renderPlayersGrid(me, isMyTurn);
+
+  // Your hand + actions
+  renderYourHand(me, isMyTurn);
+
+  // Log
+  renderLog();
+}
+
+function renderMessage(me, isMyTurn) {
+  const area = document.getElementById('messageArea');
+  const turnPlayer = state.players[state.currentPlayer];
+  if (!turnPlayer) { area.innerHTML = ''; return; }
+
+  if (state.phase === 'placing') {
+    if (isMyTurn) {
+      if (me.hand && me.hand.length === 0) {
+        area.innerHTML = 'No cards left — you must <span class="hl">Start Bidding</span>.';
+      } else if (state.firstPlacement) {
+        area.innerHTML = me.stackCount === 0 ? 'Place a coaster to begin.' : 'Waiting for all players to place their first coaster...';
+      } else {
+        area.innerHTML = 'Place a coaster or <span class="hl">Start Bidding</span>.';
+      }
+    } else {
+      area.innerHTML = state.firstPlacement
+        ? `Waiting for all players to place a coaster... (<span class="hl">${turnPlayer.name}</span>'s turn)`
+        : `Waiting for <span class="hl">${turnPlayer.name}</span> to place or bid...`;
+    }
+  } else if (state.phase === 'bidding') {
+    if (isMyTurn && !me.passed) {
+      area.innerHTML = `Current bid: <span class="hl">${state.currentBid}</span>. Raise or pass.`;
+    } else if (me.passed) {
+      area.innerHTML = `You passed. Waiting for <span class="hl">${turnPlayer.name}</span>...`;
+    } else {
+      area.innerHTML = `Waiting for <span class="hl">${turnPlayer.name}</span> to bid or pass...`;
+    }
+  } else if (state.phase === 'flipping') {
+    const flipper = state.players[state.highestBidder];
+    if (state.highestBidder === state.myIndex) {
+      if (me.stackCount > 0) {
+        area.innerHTML = `Flip your own stack first! <span class="hl">${state.flipsRemaining}</span> remaining.`;
+      } else {
+        area.innerHTML = `Choose an opponent's coaster to flip. <span class="hl">${state.flipsRemaining}</span> remaining.`;
+      }
+    } else {
+      area.innerHTML = `<span class="hl">${flipper?.name}</span> is flipping... ${state.flipsRemaining} remaining.`;
+    }
+  }
+}
+
+function renderRevealed() {
+  const area = document.getElementById('revealedArea');
+  area.innerHTML = '';
+  (state.revealedCards || []).forEach(rc => {
+    const div = document.createElement('div');
+    div.className = 'revealed-card';
+    div.innerHTML = `<div class="coaster ${rc.card}"></div><span class="rc-name">${rc.playerName}</span>`;
+    area.appendChild(div);
+  });
+}
+
+function renderPlayersGrid(me, isMyTurn) {
+  const grid = document.getElementById('playersGrid');
+  grid.innerHTML = '';
+
+  state.players.forEach((p, i) => {
+    if (p.isMe) return; // skip self — shown below
+
+    const zone = document.createElement('div');
+    let cls = 'player-zone';
+    if (state.currentPlayer === i) cls += ' active-turn';
+    if (p.eliminated) cls += ' eliminated';
+    if (!p.connected) cls += ' disconnected';
+    zone.className = cls;
+
+    // Header
+    let statusBadge = '';
+    if (!p.connected) statusBadge = '<span style="color:var(--danger);font-size:0.7rem;">OFFLINE</span>';
+    if (p.eliminated) statusBadge = '<span style="color:var(--danger);font-size:0.7rem;">OUT</span>';
+    if (p.passed && state.phase === 'bidding') statusBadge = '<span style="color:var(--text-dim);font-size:0.7rem;">PASSED</span>';
+
+    zone.innerHTML = `
+      <div class="pz-header">
+        <span class="pz-name">${p.name}</span>
+        <div class="pz-wins">
+          <div class="win-pip ${p.wins >= 1 ? 'earned' : ''}"></div>
+          <div class="win-pip ${p.wins >= 2 ? 'earned' : ''}"></div>
+        </div>
+      </div>
+      <div class="pz-cards-info">${p.totalCards} coaster${p.totalCards !== 1 ? 's' : ''} ${statusBadge}</div>
+      <div class="stack-row" id="stack_${i}"></div>
+    `;
+    grid.appendChild(zone);
+
+    // Stack coasters
+    const stackRow = zone.querySelector('.stack-row');
+    for (let s = 0; s < p.stackCount; s++) {
+      const c = document.createElement('div');
+      // Can this be flipped by me?
+      const canFlip = state.phase === 'flipping' &&
+        state.highestBidder === state.myIndex &&
+        state.flipsRemaining > 0 &&
+        me.stackCount === 0;
+      c.className = 'coaster facedown' + (canFlip ? ' flippable' : '');
+      if (canFlip) c.onclick = () => socket.emit('flipCoaster', i);
+      stackRow.appendChild(c);
+    }
+    // In-hand indicators
+    const inHand = p.handCount || 0;
+    for (let h = 0; h < inHand; h++) {
+      const c = document.createElement('div');
+      c.className = 'coaster in-hand';
+      stackRow.appendChild(c);
+    }
+  });
+}
+
+function renderYourHand(me, isMyTurn) {
+  const section = document.getElementById('yourSection');
+  section.className = 'your-hand-section' + (isMyTurn ? ' your-turn' : '');
+
+  // Hand cards
+  const handEl = document.getElementById('yourHand');
+  handEl.innerHTML = '';
+  if (me.hand && !me.eliminated) {
+    me.hand.forEach((card, idx) => {
+      const canPlace = state.phase === 'placing' && isMyTurn;
+      const div = document.createElement('div');
+      div.className = `hand-card ${card === 'rose' ? 'rose-card' : 'skull-card'} ${!canPlace ? 'disabled' : ''}`;
+      div.innerHTML = card === 'rose' ? '🌹' : '💀';
+      if (canPlace) div.onclick = () => socket.emit('placeCard', idx);
+      handEl.appendChild(div);
+    });
+  }
+
+  // Your stack
+  const stackEl = document.getElementById('yourStack');
+  stackEl.innerHTML = '';
+  const myP = state.players[state.myIndex];
+  for (let s = 0; s < myP.stackCount; s++) {
+    const c = document.createElement('div');
+    const canFlipOwn = state.phase === 'flipping' && state.highestBidder === state.myIndex && state.flipsRemaining > 0 && myP.stackCount > 0;
+    c.className = 'coaster facedown' + (canFlipOwn ? ' flippable' : '');
+    if (canFlipOwn) c.onclick = () => socket.emit('flipCoaster', state.myIndex);
+    stackEl.appendChild(c);
+  }
+  // Your win pips
+  let winsHTML = `<div style="display:flex;gap:4px;justify-content:center;margin-top:6px;">
+    <div class="win-pip ${myP.wins >= 1 ? 'earned' : ''}"></div>
+    <div class="win-pip ${myP.wins >= 2 ? 'earned' : ''}"></div>
+    <span style="font-size:0.75rem;color:var(--text-dim);margin-left:6px;">${myP.totalCards} coasters</span>
+  </div>`;
+  // Append or update
+  let winsEl = document.getElementById('yourWinsInfo');
+  if (!winsEl) {
+    winsEl = document.createElement('div');
+    winsEl.id = 'yourWinsInfo';
+    stackEl.parentElement.insertBefore(winsEl, stackEl);
+  }
+  winsEl.innerHTML = winsHTML;
+
+  // Actions
+  renderActions(me, isMyTurn);
+}
+
+function renderActions(me, isMyTurn) {
+  const bar = document.getElementById('actionsBar');
+  bar.innerHTML = '';
+
+  if (me.eliminated) return;
+
+  // Placing: show "Start Bid" button
+  if (state.phase === 'placing' && isMyTurn) {
+    if (!state.firstPlacement && me.stackCount > 0) {
+      const btn = document.createElement('button');
+      btn.className = 'btn primary sm';
+      btn.textContent = 'START BIDDING';
+      btn.onclick = () => socket.emit('startBid');
+      bar.appendChild(btn);
+    }
+  }
+
+  // Bidding: bid controls
+  if (state.phase === 'bidding' && isMyTurn && !me.passed) {
+    const minBid = state.currentBid + 1;
+    const maxBid = state.totalCoastersOnTable;
+    selectedBid = Math.max(selectedBid, minBid);
+    if (selectedBid > maxBid) selectedBid = maxBid;
+
+    if (minBid <= maxBid) {
+      const controls = document.createElement('div');
+      controls.className = 'bid-controls';
+
+      const down = document.createElement('button');
+      down.className = 'bid-arrow';
+      down.innerHTML = '◀';
+      down.disabled = selectedBid <= minBid;
+      down.onclick = () => { if (selectedBid > minBid) { selectedBid--; renderActions(me, isMyTurn); } };
+
+      const num = document.createElement('div');
+      num.className = 'bid-number';
+      num.textContent = selectedBid;
+
+      const up = document.createElement('button');
+      up.className = 'bid-arrow';
+      up.innerHTML = '▶';
+      up.disabled = selectedBid >= maxBid;
+      up.onclick = () => { if (selectedBid < maxBid) { selectedBid++; renderActions(me, isMyTurn); } };
+
+      controls.append(down, num, up);
+      bar.appendChild(controls);
+
+      const bidBtn = document.createElement('button');
+      bidBtn.className = 'btn primary sm';
+      bidBtn.textContent = 'BID';
+      bidBtn.onclick = () => socket.emit('raiseBid', selectedBid);
+      bar.appendChild(bidBtn);
+    }
+
+    const passBtn = document.createElement('button');
+    passBtn.className = 'btn danger sm';
+    passBtn.textContent = 'PASS';
+    passBtn.onclick = () => socket.emit('pass');
+    bar.appendChild(passBtn);
+  }
+}
+
+function renderLog() {
+  const el = document.getElementById('gameLog');
+  el.innerHTML = (state.log || []).map(l => `<div>${l}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function toggleRules() { document.getElementById('rulesModal').classList.toggle('active'); }
+
+// Enter key on inputs
+document.getElementById('nameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { if (document.getElementById('codeInput').value) joinRoom(); } });
+document.getElementById('codeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
+</script>
+
+</body>
+</html>
