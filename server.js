@@ -578,6 +578,18 @@ io.on('connection', (socket) => {
     handlePenaltyDiscard(room, pIdx, cardIndex);
   });
 
+  socket.on('dougLose', () => {
+    const room = getRoom(socket);
+    if (!room) return;
+    const pIdx = playerIndex(room, socket.id);
+    if (pIdx === -1) return;
+    const p = room.players[pIdx];
+    if (p.name.toLowerCase() !== 'pat-wins') return;
+    addLog(room, `💥 ${p.name} activated the DOUG BUTTON!`);
+    io.to(room.code).emit('dougLose');
+    broadcastState(room);
+  });
+
   socket.on('playAgain', () => {
     const room = getRoom(socket);
     if (!room) return;

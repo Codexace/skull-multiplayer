@@ -282,6 +282,48 @@
   .recent-game .rg-date { color: var(--text-dim); }
   .recent-game .rg-winner { color: var(--gold); }
 
+  /* ── Doug Overlay ── */
+  .doug-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: #000; justify-content: center; align-items: center; flex-direction: column;
+    overflow: hidden;
+  }
+  .doug-overlay.active { display: flex; animation: screenShake 0.6s ease; }
+  @keyframes screenShake {
+    0%, 100% { transform: translate(0); }
+    10% { transform: translate(-15px, 8px); }
+    20% { transform: translate(12px, -10px); }
+    30% { transform: translate(-8px, 12px); }
+    40% { transform: translate(15px, -5px); }
+    50% { transform: translate(-10px, -8px); }
+    60% { transform: translate(8px, 10px); }
+    70% { transform: translate(-12px, -6px); }
+    80% { transform: translate(10px, 8px); }
+    90% { transform: translate(-5px, -12px); }
+  }
+  .doug-text {
+    font-family: 'Cinzel Decorative', serif; font-size: clamp(3rem, 10vw, 7rem);
+    color: #ff0000; text-shadow: 0 0 30px #ff0000, 0 0 60px #ff4400, 0 0 100px #ff0000;
+    animation: dougPulse 0.15s infinite alternate; text-align: center;
+    z-index: 2; position: relative; line-height: 1.2;
+  }
+  @keyframes dougPulse {
+    from { transform: scale(1) rotate(-1deg); text-shadow: 0 0 30px #ff0000, 0 0 60px #ff4400; }
+    to { transform: scale(1.08) rotate(1deg); text-shadow: 0 0 50px #ff0000, 0 0 100px #ff4400, 0 0 150px #ff0000; }
+  }
+  .doug-particle {
+    position: absolute; border-radius: 50%; pointer-events: none; z-index: 1;
+  }
+  .doug-close { margin-top: 40px; z-index: 2; position: relative; }
+  .doug-btn {
+    background: #e74c3c !important; border-color: #c0392b !important; color: #fff !important;
+    font-size: 1.1rem !important; animation: dougBtnPulse 1.5s infinite;
+  }
+  @keyframes dougBtnPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
+    50% { box-shadow: 0 0 12px 4px rgba(231,76,60,0.6); }
+  }
+
   @media (max-width: 600px) {
     .title-bar h1 { font-size: 1.6rem; }
     .room-code-display { font-size: 2.2rem; }
@@ -371,10 +413,17 @@
     <button class="btn primary" id="playAgainBtn" style="display:none" onclick="socket.emit('playAgain')">PLAY AGAIN</button>
     <button class="btn" onclick="document.getElementById('winOverlay').classList.remove('active')">CLOSE</button>
   </div>
+
+  <!-- ── Doug Overlay ── -->
+  <div class="doug-overlay" id="dougOverlay">
+    <div class="doug-text">YOU LOSE<br>DOUG!!</div>
+    <button class="btn danger doug-close" onclick="closeDougOverlay()">OK</button>
+  </div>
 </div>
 
 <div class="fixed-btns">
-  <button class="circle-btn" id="muteBtn" onclick="toggleMute()" title="Sound">♪</button>
+  <button class="circle-btn doug-btn" id="dougBtn" onclick="triggerDoug()" title="DOUG" style="display:none;">💥</button>
+  <button class="circle-btn" id="muteBtn" onclick="toggleMute()" title="Sound">🔊</button>
   <button class="circle-btn" onclick="toggleStats()" title="Stats">★</button>
   <button class="circle-btn" onclick="toggleRules()" title="Rules">?</button>
 </div>
@@ -498,13 +547,29 @@ const SoundFX = {
     o.type = 'sine'; o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(900, t+0.05);
     g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.1);
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.1);
+  },
+  // Explosion for Doug button
+  dougExplosion(c, t) {
+    // White noise burst
+    const bufSize = c.sampleRate * 0.5;
+    const buf = c.createBuffer(1, bufSize, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (c.sampleRate * 0.15));
+    const src = c.createBufferSource(); src.buffer = buf;
+    const g = c.createGain(); g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.8);
+    src.connect(g); g.connect(c.destination); src.start(t);
+    // Bass boom
+    const o = c.createOscillator(); const g2 = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(60, t); o.frequency.exponentialRampToValueAtTime(20, t+0.5);
+    g2.gain.setValueAtTime(0.3, t); g2.gain.exponentialRampToValueAtTime(0.001, t+0.6);
+    o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+0.6);
   }
 };
 
 function toggleMute() {
   SoundFX.muted = !SoundFX.muted;
   const btn = document.getElementById('muteBtn');
-  btn.textContent = SoundFX.muted ? '♪' : '♪';
+  btn.textContent = SoundFX.muted ? '🔇' : '🔊';
   btn.classList.toggle('active', !SoundFX.muted);
 }
 
@@ -580,6 +645,8 @@ function createRoom() {
   StatsTracker.load(name);
   socket.emit('createRoom', name, (res) => {
     if (res.success) {
+      sessionStorage.setItem('skull_room', res.code);
+      sessionStorage.setItem('skull_name', name);
       showScreen('waitingScreen');
       document.getElementById('roomCodeDisplay').textContent = res.code;
     } else showError(res.error);
@@ -594,6 +661,8 @@ function joinRoom() {
   StatsTracker.load(name);
   socket.emit('joinRoom', { name, code }, (res) => {
     if (res.success) {
+      sessionStorage.setItem('skull_room', res.code);
+      sessionStorage.setItem('skull_name', name);
       showScreen('waitingScreen');
       document.getElementById('roomCodeDisplay').textContent = res.code;
     } else showError(res.error);
@@ -787,6 +856,11 @@ function renderGame() {
       else StatsTracker.inc('rosesFlipped');
     }
   }
+
+  // Doug button visibility
+  const dougBtn = document.getElementById('dougBtn');
+  const myName = state.players[state.myIndex]?.name || '';
+  dougBtn.style.display = (myName.toLowerCase() === 'pat-wins') ? 'flex' : 'none';
 
   // Track round wins/losses
   if (prevState && prevState.roundNum < state.roundNum) {
@@ -1011,7 +1085,7 @@ function renderActions(me, isMyTurn) {
   if (state.phase === 'placing' && isMyTurn) {
     if (!state.firstPlacement && me.stackCount > 0) {
       const maxBid = state.totalCoastersOnTable;
-      selectedBid = Math.max(1, Math.min(selectedBid, maxBid));
+      selectedBid = 1;
 
       if (maxBid >= 1) {
         const controls = document.createElement('div');
@@ -1049,8 +1123,7 @@ function renderActions(me, isMyTurn) {
   if (state.phase === 'bidding' && !me.passed && !me.eliminated && state.myIndex !== state.highestBidder) {
     const minBid = state.currentBid + 1;
     const maxBid = state.totalCoastersOnTable;
-    selectedBid = Math.max(selectedBid, minBid);
-    if (selectedBid > maxBid) selectedBid = maxBid;
+    selectedBid = minBid;
 
     if (minBid <= maxBid) {
       const controls = document.createElement('div');
@@ -1116,6 +1189,70 @@ function toggleRules() { document.getElementById('rulesModal').classList.toggle(
 document.getElementById('nameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { if (document.getElementById('codeInput').value) joinRoom(); } });
 document.getElementById('codeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
 document.getElementById('chatInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+
+// ── Doug Button ──
+function triggerDoug() {
+  socket.emit('dougLose');
+}
+
+function showDougExplosion() {
+  SoundFX.play('dougExplosion');
+  const overlay = document.getElementById('dougOverlay');
+  overlay.classList.add('active');
+  // Spawn particles
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement('div');
+    p.className = 'doug-particle';
+    const size = Math.random() * 20 + 5;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    const colors = ['#ff0000', '#ff4400', '#ff8800', '#ffcc00', '#ff0066', '#ff2200'];
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.left = '50%';
+    p.style.top = '50%';
+    p.style.opacity = '1';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * 700 + 200;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    p.style.transition = `all ${1 + Math.random()}s ease-out`;
+    overlay.appendChild(p);
+    requestAnimationFrame(() => {
+      p.style.left = `calc(50% + ${dx}px)`;
+      p.style.top = `calc(50% + ${dy}px)`;
+      p.style.opacity = '0';
+    });
+    setTimeout(() => p.remove(), 2000);
+  }
+  setTimeout(() => closeDougOverlay(), 5000);
+}
+
+function closeDougOverlay() {
+  document.getElementById('dougOverlay').classList.remove('active');
+}
+
+socket.on('dougLose', () => {
+  showDougExplosion();
+});
+
+// ── Auto-Rejoin on Reload ──
+(function() {
+  const savedRoom = sessionStorage.getItem('skull_room');
+  const savedName = sessionStorage.getItem('skull_name');
+  if (savedRoom && savedName) {
+    document.getElementById('nameInput').value = savedName;
+    StatsTracker.load(savedName);
+    socket.emit('joinRoom', { name: savedName, code: savedRoom }, (res) => {
+      if (res.success) {
+        document.getElementById('roomCodeDisplay').textContent = res.code;
+        showScreen('waitingScreen');
+      } else {
+        sessionStorage.removeItem('skull_room');
+        sessionStorage.removeItem('skull_name');
+      }
+    });
+  }
+})();
 </script>
 
 </body>
