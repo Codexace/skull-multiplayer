@@ -474,11 +474,14 @@ io.on('connection', (socket) => {
       // Check if this is a reconnecting player
       const existing = room.players.find(p => p.name === name && !p.connected);
       if (existing) {
+        const oldId = existing.id;
         existing.id = socket.id;
         existing.connected = true;
+        if (room.hostId === oldId) room.hostId = socket.id;
         socket.join(code);
         socket.roomCode = code;
         cb({ success: true, code });
+        addLog(room, `${existing.name} reconnected.`);
         broadcastState(room);
         return;
       }
@@ -582,6 +585,7 @@ io.on('connection', (socket) => {
     const room = getRoom(socket);
     if (!room) return;
     if (socket.id !== room.hostId) return;
+    clearTurnTimer(room);
     room.started = false;
     room.phase = null;
     room.log = [];
