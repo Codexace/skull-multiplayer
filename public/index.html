@@ -95,6 +95,9 @@
   }
   .player-list .host-badge { font-size: 0.85rem; color: var(--gold); letter-spacing: 0.1em; }
   .player-list .you-badge { font-size: 0.85rem; color: var(--skull); letter-spacing: 0.1em; }
+  .player-color-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle;
+  }
   .waiting-dots::after { content: ''; animation: dots 1.5s infinite; }
   @keyframes dots { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
 
@@ -102,11 +105,20 @@
   .status-bar {
     display: flex; justify-content: space-between; align-items: center;
     padding: 14px 24px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; margin-bottom: 16px;
+    border-radius: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
   }
   .phase-label { font-family: 'Cinzel', serif; font-size: 1.15rem; color: var(--gold); letter-spacing: 0.08em; }
   .round-label { font-size: 1.05rem; color: var(--text-dim); }
   .bid-info { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--rose); }
+  .coasters-info { font-size: 0.95rem; color: var(--text-dim); }
+
+  /* ── Turn Timer ── */
+  .turn-timer {
+    height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 6px; overflow: hidden;
+  }
+  .turn-timer-bar {
+    height: 100%; border-radius: 2px; transition: width 1s linear, background-color 1s linear;
+  }
 
   .message-area {
     text-align: center; padding: 16px; min-height: 56px; font-size: 1.3rem; line-height: 1.5;
@@ -158,6 +170,16 @@
   .coaster.flippable:hover { transform: scale(1.15); box-shadow: 0 0 14px rgba(212,168,67,0.4); border-color: var(--gold); }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(212,168,67,0.2); } 50% { box-shadow: 0 0 0 5px rgba(212,168,67,0); } }
 
+  /* ── Flip Animation ── */
+  .coaster.flip-anim {
+    animation: flipCard 0.6s ease forwards;
+  }
+  @keyframes flipCard {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(90deg); }
+    100% { transform: rotateY(0deg); }
+  }
+
   /* ── Your Hand ── */
   .your-hand-section {
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
@@ -201,14 +223,29 @@
   .revealed-card .rc-name { font-size: 0.85rem; color: var(--text-dim); font-family: 'Cinzel', serif; }
   @keyframes revealPop { from { transform: scale(0.5) rotateY(90deg); opacity: 0; } to { transform: scale(1) rotateY(0); opacity: 1; } }
 
-  /* ── Game Log ── */
+  /* ── Game Log + Chat ── */
+  .log-chat-wrapper { margin-top: 20px; }
   .game-log {
-    margin-top: 20px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; max-height: 160px; overflow-y: auto; font-size: 0.95rem;
+    padding: 16px 20px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px 12px 0 0; max-height: 160px; overflow-y: auto; font-size: 0.95rem;
     color: var(--text-dim); line-height: 1.8;
   }
   .game-log::-webkit-scrollbar { width: 4px; }
   .game-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .chat-input-row {
+    display: flex; gap: 0; background: var(--surface); border: 1px solid var(--border);
+    border-top: none; border-radius: 0 0 12px 12px; overflow: hidden;
+  }
+  .chat-input-row input {
+    flex: 1; padding: 10px 16px; background: var(--surface2); border: none; color: var(--text);
+    font-family: 'Crimson Text', serif; font-size: 1rem; outline: none;
+  }
+  .chat-input-row input::placeholder { color: var(--text-dim); }
+  .chat-input-row button {
+    padding: 10px 18px; background: var(--surface2); border: none; border-left: 1px solid var(--border);
+    color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.9rem; cursor: pointer; transition: background 0.2s;
+  }
+  .chat-input-row button:hover { background: var(--border); }
 
   /* ── Win Overlay ── */
   .win-overlay {
@@ -219,22 +256,73 @@
   .win-overlay h2 { font-family: 'Cinzel Decorative', serif; font-size: 3.4rem; color: var(--gold); text-shadow: 0 0 50px rgba(212,168,67,0.4); }
   .win-overlay p { font-size: 1.4rem; color: var(--text-dim); }
 
-  /* ── Rules ── */
-  .rules-btn {
-    position: fixed; bottom: 18px; right: 18px; width: 40px; height: 40px; border-radius: 50%;
+  /* ── Rules / Stats / Mute ── */
+  .fixed-btns { position: fixed; bottom: 18px; right: 18px; display: flex; gap: 8px; z-index: 50; }
+  .circle-btn {
+    width: 40px; height: 40px; border-radius: 50%;
     background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
-    font-family: 'Cinzel', serif; font-size: 1rem; cursor: pointer; z-index: 50; transition: all 0.2s;
+    font-family: 'Cinzel', serif; font-size: 1rem; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
   }
-  .rules-btn:hover { border-color: var(--gold); color: var(--gold); }
-  .rules-modal { display: none; position: fixed; inset: 0; background: rgba(10,10,15,0.9); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
-  .rules-modal.active { display: flex; }
-  .rules-content {
+  .circle-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .circle-btn.active { border-color: var(--gold); color: var(--gold); }
+  .rules-modal, .stats-modal { display: none; position: fixed; inset: 0; background: rgba(10,10,15,0.9); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+  .rules-modal.active, .stats-modal.active { display: flex; }
+  .rules-content, .stats-content {
     background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px;
     max-width: 520px; max-height: 80vh; overflow-y: auto; line-height: 1.7; font-size: 0.92rem;
   }
-  .rules-content h3 { font-family: 'Cinzel', serif; color: var(--gold); margin: 14px 0 6px; font-size: 1rem; }
-  .rules-content h3:first-child { margin-top: 0; }
-  .rules-content .close-rules { float: right; background: none; border: none; color: var(--text-dim); font-size: 1.3rem; cursor: pointer; }
+  .rules-content h3, .stats-content h3 { font-family: 'Cinzel', serif; color: var(--gold); margin: 14px 0 6px; font-size: 1rem; }
+  .rules-content h3:first-child, .stats-content h3:first-child { margin-top: 0; }
+  .rules-content .close-rules, .stats-content .close-stats { float: right; background: none; border: none; color: var(--text-dim); font-size: 1.3rem; cursor: pointer; }
+  .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .stat-label { color: var(--text-dim); }
+  .stat-value { color: var(--gold); font-weight: 600; }
+  .recent-game { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+  .recent-game .rg-date { color: var(--text-dim); }
+  .recent-game .rg-winner { color: var(--gold); }
+
+  /* ── Doug Overlay ── */
+  .doug-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: #000; justify-content: center; align-items: center; flex-direction: column;
+    overflow: hidden;
+  }
+  .doug-overlay.active { display: flex; animation: screenShake 0.6s ease; }
+  @keyframes screenShake {
+    0%, 100% { transform: translate(0); }
+    10% { transform: translate(-15px, 8px); }
+    20% { transform: translate(12px, -10px); }
+    30% { transform: translate(-8px, 12px); }
+    40% { transform: translate(15px, -5px); }
+    50% { transform: translate(-10px, -8px); }
+    60% { transform: translate(8px, 10px); }
+    70% { transform: translate(-12px, -6px); }
+    80% { transform: translate(10px, 8px); }
+    90% { transform: translate(-5px, -12px); }
+  }
+  .doug-text {
+    font-family: 'Cinzel Decorative', serif; font-size: clamp(3rem, 10vw, 7rem);
+    color: #ff0000; text-shadow: 0 0 30px #ff0000, 0 0 60px #ff4400, 0 0 100px #ff0000;
+    animation: dougPulse 0.15s infinite alternate; text-align: center;
+    z-index: 2; position: relative; line-height: 1.2;
+  }
+  @keyframes dougPulse {
+    from { transform: scale(1) rotate(-1deg); text-shadow: 0 0 30px #ff0000, 0 0 60px #ff4400; }
+    to { transform: scale(1.08) rotate(1deg); text-shadow: 0 0 50px #ff0000, 0 0 100px #ff4400, 0 0 150px #ff0000; }
+  }
+  .doug-particle {
+    position: absolute; border-radius: 50%; pointer-events: none; z-index: 1;
+  }
+  .doug-close { margin-top: 40px; z-index: 2; position: relative; }
+  .doug-btn {
+    background: #e74c3c !important; border-color: #c0392b !important; color: #fff !important;
+    font-size: 1.1rem !important; animation: dougBtnPulse 1.5s infinite;
+  }
+  @keyframes dougBtnPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
+    50% { box-shadow: 0 0 12px 4px rgba(231,76,60,0.6); }
+  }
 
   @media (max-width: 600px) {
     .title-bar h1 { font-size: 1.6rem; }
@@ -289,8 +377,10 @@
     <div class="status-bar">
       <span class="phase-label" id="phaseLabel"></span>
       <span class="bid-info" id="bidInfo"></span>
+      <span class="coasters-info" id="coastersInfo"></span>
       <span class="round-label" id="roundLabel"></span>
     </div>
+    <div class="turn-timer" id="turnTimerWrap" style="display:none;"><div class="turn-timer-bar" id="turnTimerBar"></div></div>
     <div class="message-area" id="messageArea"></div>
 
     <!-- Revealed flips -->
@@ -307,7 +397,13 @@
       <div class="actions-bar" id="actionsBar"></div>
     </div>
 
-    <div class="game-log" id="gameLog"></div>
+    <div class="log-chat-wrapper">
+      <div class="game-log" id="gameLog"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Type a message..." maxlength="200" autocomplete="off">
+        <button onclick="sendChat()">SEND</button>
+      </div>
+    </div>
   </div>
 
   <!-- ── Win Overlay ── -->
@@ -317,9 +413,21 @@
     <button class="btn primary" id="playAgainBtn" style="display:none" onclick="socket.emit('playAgain')">PLAY AGAIN</button>
     <button class="btn" onclick="document.getElementById('winOverlay').classList.remove('active')">CLOSE</button>
   </div>
+
+  <!-- ── Doug Overlay ── -->
+  <div class="doug-overlay" id="dougOverlay">
+    <div class="doug-text">YOU LOSE<br>DOUG!!</div>
+    <button class="btn danger doug-close" onclick="closeDougOverlay()">OK</button>
+  </div>
 </div>
 
-<button class="rules-btn" onclick="toggleRules()" title="Rules">?</button>
+<div class="fixed-btns">
+  <button class="circle-btn doug-btn" id="dougBtn" onclick="triggerDoug()" title="DOUG" style="display:none;">💥</button>
+  <button class="circle-btn" id="muteBtn" onclick="toggleMute()" title="Sound">🔊</button>
+  <button class="circle-btn" onclick="toggleStats()" title="Stats">★</button>
+  <button class="circle-btn" onclick="toggleRules()" title="Rules">?</button>
+</div>
+
 <div class="rules-modal" id="rulesModal">
   <div class="rules-content">
     <button class="close-rules" onclick="toggleRules()">✕</button>
@@ -336,11 +444,194 @@
   </div>
 </div>
 
+<div class="stats-modal" id="statsModal">
+  <div class="stats-content" id="statsContent">
+    <button class="close-stats" onclick="toggleStats()">✕</button>
+    <h3>Your Stats</h3>
+    <div id="statsBody">No stats yet. Play a game!</div>
+  </div>
+</div>
+
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
 const socket = io();
 let state = null;
+let prevState = null;
 let selectedBid = 1;
+let prevRevealedCount = 0;
+let timerInterval = null;
+
+const PLAYER_COLORS = ['#d4a843', '#c44569', '#8b9dc3', '#2ecc71', '#e67e22', '#9b59b6'];
+
+// ── Sound Effects (Web Audio API) ──
+const SoundFX = {
+  ctx: null,
+  muted: false,
+  init() {
+    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  },
+  play(name) {
+    if (this.muted) return;
+    this.init();
+    const c = this.ctx;
+    const now = c.currentTime;
+    try { this[name](c, now); } catch(e) {}
+  },
+  // Short click
+  place(c, t) {
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(800, t);
+    g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.08);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.08);
+  },
+  // Rising tone
+  bid(c, t) {
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(400, t); o.frequency.linearRampToValueAtTime(700, t+0.15);
+    g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.2);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.2);
+  },
+  // Low descending
+  pass(c, t) {
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(300, t); o.frequency.linearRampToValueAtTime(150, t+0.2);
+    g.gain.setValueAtTime(0.1, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.25);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.25);
+  },
+  // Pleasant chime
+  flipRose(c, t) {
+    [523, 659, 784].forEach((f, i) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, t + i*0.06);
+      g.gain.setValueAtTime(0.1, t + i*0.06); g.gain.exponentialRampToValueAtTime(0.001, t + i*0.06 + 0.3);
+      o.connect(g); g.connect(c.destination); o.start(t + i*0.06); o.stop(t + i*0.06 + 0.3);
+    });
+  },
+  // Dramatic buzz
+  flipSkull(c, t) {
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(100, t); o.frequency.linearRampToValueAtTime(60, t+0.4);
+    g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.5);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.5);
+  },
+  // Ascending arpeggio
+  winPoint(c, t) {
+    [523, 659, 784, 1047].forEach((f, i) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, t + i*0.1);
+      g.gain.setValueAtTime(0.12, t + i*0.1); g.gain.exponentialRampToValueAtTime(0.001, t + i*0.1 + 0.4);
+      o.connect(g); g.connect(c.destination); o.start(t + i*0.1); o.stop(t + i*0.1 + 0.4);
+    });
+  },
+  // Dark descending
+  eliminated(c, t) {
+    [300, 250, 200, 150].forEach((f, i) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t + i*0.12);
+      g.gain.setValueAtTime(0.08, t + i*0.12); g.gain.exponentialRampToValueAtTime(0.001, t + i*0.12 + 0.2);
+      o.connect(g); g.connect(c.destination); o.start(t + i*0.12); o.stop(t + i*0.12 + 0.2);
+    });
+  },
+  // Fanfare
+  gameWin(c, t) {
+    [523, 659, 784, 1047, 784, 1047].forEach((f, i) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(f, t + i*0.12);
+      g.gain.setValueAtTime(0.14, t + i*0.12); g.gain.exponentialRampToValueAtTime(0.001, t + i*0.12 + 0.5);
+      o.connect(g); g.connect(c.destination); o.start(t + i*0.12); o.stop(t + i*0.12 + 0.5);
+    });
+  },
+  // Soft pop
+  chat(c, t) {
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(900, t+0.05);
+    g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.1);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.1);
+  },
+  // Explosion for Doug button
+  dougExplosion(c, t) {
+    // White noise burst
+    const bufSize = c.sampleRate * 0.5;
+    const buf = c.createBuffer(1, bufSize, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (c.sampleRate * 0.15));
+    const src = c.createBufferSource(); src.buffer = buf;
+    const g = c.createGain(); g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.8);
+    src.connect(g); g.connect(c.destination); src.start(t);
+    // Bass boom
+    const o = c.createOscillator(); const g2 = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(60, t); o.frequency.exponentialRampToValueAtTime(20, t+0.5);
+    g2.gain.setValueAtTime(0.3, t); g2.gain.exponentialRampToValueAtTime(0.001, t+0.6);
+    o.connect(g2); g2.connect(c.destination); o.start(t); o.stop(t+0.6);
+  }
+};
+
+function toggleMute() {
+  SoundFX.muted = !SoundFX.muted;
+  const btn = document.getElementById('muteBtn');
+  btn.textContent = SoundFX.muted ? '🔇' : '🔊';
+  btn.classList.toggle('active', !SoundFX.muted);
+}
+
+// ── Stats Tracker (localStorage) ──
+const StatsTracker = {
+  data: null,
+  playerName: null,
+  load(name) {
+    this.playerName = name;
+    try {
+      this.data = JSON.parse(localStorage.getItem('skull_stats_' + name)) || this.defaultData();
+    } catch(e) { this.data = this.defaultData(); }
+  },
+  defaultData() {
+    return { gamesPlayed: 0, gamesWon: 0, roundsWon: 0, roundsLost: 0,
+             skullsPlaced: 0, rosesPlaced: 0, skullsFlipped: 0, rosesFlipped: 0, recentGames: [] };
+  },
+  save() {
+    if (!this.playerName || !this.data) return;
+    localStorage.setItem('skull_stats_' + this.playerName, JSON.stringify(this.data));
+  },
+  inc(key, n) { if (this.data) { this.data[key] = (this.data[key] || 0) + (n || 1); this.save(); } },
+  addGame(players, winner, rounds) {
+    if (!this.data) return;
+    this.data.gamesPlayed++;
+    if (winner === this.playerName) this.data.gamesWon++;
+    this.data.recentGames.push({ date: new Date().toLocaleDateString(), players, winner, rounds });
+    if (this.data.recentGames.length > 20) this.data.recentGames.shift();
+    this.save();
+  }
+};
+
+function toggleStats() {
+  const modal = document.getElementById('statsModal');
+  modal.classList.toggle('active');
+  if (modal.classList.contains('active')) renderStats();
+}
+
+function renderStats() {
+  const body = document.getElementById('statsBody');
+  const d = StatsTracker.data;
+  if (!d || !d.gamesPlayed) { body.innerHTML = 'No stats yet. Play a game!'; return; }
+  const winRate = d.gamesPlayed > 0 ? Math.round(d.gamesWon / d.gamesPlayed * 100) : 0;
+  let html = `
+    <div class="stat-row"><span class="stat-label">Games Played</span><span class="stat-value">${d.gamesPlayed}</span></div>
+    <div class="stat-row"><span class="stat-label">Games Won</span><span class="stat-value">${d.gamesWon}</span></div>
+    <div class="stat-row"><span class="stat-label">Win Rate</span><span class="stat-value">${winRate}%</span></div>
+    <div class="stat-row"><span class="stat-label">Rounds Won</span><span class="stat-value">${d.roundsWon}</span></div>
+    <div class="stat-row"><span class="stat-label">Rounds Lost</span><span class="stat-value">${d.roundsLost}</span></div>
+    <div class="stat-row"><span class="stat-label">Roses Flipped</span><span class="stat-value">${d.rosesFlipped}</span></div>
+    <div class="stat-row"><span class="stat-label">Skulls Flipped</span><span class="stat-value">${d.skullsFlipped}</span></div>
+    <div class="stat-row"><span class="stat-label">Roses Placed</span><span class="stat-value">${d.rosesPlaced}</span></div>
+    <div class="stat-row"><span class="stat-label">Skulls Placed</span><span class="stat-value">${d.skullsPlaced}</span></div>
+  `;
+  if (d.recentGames && d.recentGames.length > 0) {
+    html += '<h3>Recent Games</h3>';
+    d.recentGames.slice(-10).reverse().forEach(g => {
+      html += `<div class="recent-game"><span class="rg-date">${g.date}</span> — <span class="rg-winner">${g.winner}</span> won (${g.rounds} rounds, ${g.players.join(', ')})</div>`;
+    });
+  }
+  body.innerHTML = html;
+}
 
 // ── Lobby ──
 function showScreen(id) {
@@ -351,8 +642,11 @@ function showScreen(id) {
 function createRoom() {
   const name = document.getElementById('nameInput').value.trim();
   if (!name) { showError('Enter your name.'); return; }
+  StatsTracker.load(name);
   socket.emit('createRoom', name, (res) => {
     if (res.success) {
+      sessionStorage.setItem('skull_room', res.code);
+      sessionStorage.setItem('skull_name', name);
       showScreen('waitingScreen');
       document.getElementById('roomCodeDisplay').textContent = res.code;
     } else showError(res.error);
@@ -364,8 +658,11 @@ function joinRoom() {
   const code = document.getElementById('codeInput').value.trim().toUpperCase();
   if (!name) { showError('Enter your name.'); return; }
   if (!code || code.length !== 4) { showError('Enter a 4-letter room code.'); return; }
+  StatsTracker.load(name);
   socket.emit('joinRoom', { name, code }, (res) => {
     if (res.success) {
+      sessionStorage.setItem('skull_room', res.code);
+      sessionStorage.setItem('skull_name', name);
       showScreen('waitingScreen');
       document.getElementById('roomCodeDisplay').textContent = res.code;
     } else showError(res.error);
@@ -379,14 +676,97 @@ function copyCode() {
   navigator.clipboard.writeText(code).catch(() => {});
 }
 
+// ── Chat ──
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  socket.emit('chatMessage', msg);
+  input.value = '';
+}
+
+// ── Sound Detection (diff state) ──
+function detectSounds(prev, curr) {
+  if (!prev || !curr) return;
+
+  // New revealed cards
+  const prevRC = prev.revealedCards ? prev.revealedCards.length : 0;
+  const currRC = curr.revealedCards ? curr.revealedCards.length : 0;
+  if (currRC > prevRC) {
+    const newCard = curr.revealedCards[currRC - 1];
+    if (newCard.card === 'skull') SoundFX.play('flipSkull');
+    else SoundFX.play('flipRose');
+  }
+
+  // Phase transitions
+  if (prev.phase !== curr.phase) {
+    if (curr.phase === 'bidding') SoundFX.play('bid');
+  }
+
+  // Bid raised
+  if (prev.currentBid < curr.currentBid && prev.phase === 'bidding' && curr.phase === 'bidding') {
+    SoundFX.play('bid');
+  }
+
+  // Coaster placed
+  if (curr.phase === 'placing' && prev.totalCoastersOnTable < curr.totalCoastersOnTable) {
+    SoundFX.play('place');
+  }
+
+  // Check for new log entries with specific patterns
+  const prevLogLen = prev.log ? prev.log.length : 0;
+  const currLogLen = curr.log ? curr.log.length : 0;
+  if (currLogLen > prevLogLen) {
+    const newLogs = curr.log.slice(prevLogLen);
+    for (const l of newLogs) {
+      if (l.includes('wins a point')) SoundFX.play('winPoint');
+      else if (l.includes('is eliminated')) SoundFX.play('eliminated');
+      else if (l.includes('passed')) SoundFX.play('pass');
+      else if (l.startsWith('💬') && !l.includes(curr.players[curr.myIndex]?.name + ':')) SoundFX.play('chat');
+    }
+  }
+}
+
+// ── Timer ──
+function updateTimer() {
+  if (!state || !state.turnDeadline) {
+    document.getElementById('turnTimerWrap').style.display = 'none';
+    return;
+  }
+  const remaining = state.turnDeadline - Date.now();
+  const total = 20000;
+  if (remaining <= 0) {
+    document.getElementById('turnTimerWrap').style.display = 'none';
+    return;
+  }
+  const pct = Math.max(0, (remaining / total) * 100);
+  const bar = document.getElementById('turnTimerBar');
+  const wrap = document.getElementById('turnTimerWrap');
+  wrap.style.display = 'block';
+  bar.style.width = pct + '%';
+  if (pct > 50) bar.style.backgroundColor = 'var(--success)';
+  else if (pct > 25) bar.style.backgroundColor = 'var(--gold)';
+  else bar.style.backgroundColor = 'var(--danger)';
+}
+
 // ── Game State ──
 socket.on('gameState', (s) => {
+  prevState = state;
   state = s;
+  detectSounds(prevState, s);
   if (!s.started) {
     renderWaiting();
   } else {
     showScreen('gameScreen');
     renderGame();
+  }
+  // Start timer interval
+  if (timerInterval) clearInterval(timerInterval);
+  if (s.turnDeadline) {
+    timerInterval = setInterval(updateTimer, 200);
+    updateTimer();
+  } else {
+    document.getElementById('turnTimerWrap').style.display = 'none';
   }
 });
 
@@ -401,6 +781,12 @@ socket.on('gameOver', ({ winnerName, winnerIndex }) => {
   document.getElementById('winSubtitle').textContent = isMe ? 'You have proven your nerve!' : `${winnerName} claims the victory.`;
   document.getElementById('playAgainBtn').style.display = state.isHost ? 'inline-block' : 'none';
   overlay.classList.add('active');
+  if (isMe) SoundFX.play('gameWin'); else SoundFX.play('eliminated');
+  // Record stats
+  if (state) {
+    const players = state.players.map(p => p.name);
+    StatsTracker.addGame(players, winnerName, state.roundNum);
+  }
 });
 
 // ── Waiting Room Render ──
@@ -410,10 +796,11 @@ function renderWaiting() {
   list.innerHTML = '';
   state.players.forEach((p, i) => {
     const li = document.createElement('li');
+    const color = PLAYER_COLORS[p.colorIndex % PLAYER_COLORS.length];
     let badges = '';
     if (i === 0) badges += '<span class="host-badge">HOST</span> ';
     if (p.isMe) badges += '<span class="you-badge">YOU</span>';
-    li.innerHTML = `<span>${p.name}</span><span>${badges}</span>`;
+    li.innerHTML = `<span><span class="player-color-dot" style="background:${color}"></span>${p.name}</span><span>${badges}</span>`;
     list.appendChild(li);
   });
   const btn = document.getElementById('startGameBtn');
@@ -433,6 +820,7 @@ function renderGame() {
   document.getElementById('roundLabel').textContent = `Round ${state.roundNum}`;
   document.getElementById('bidInfo').textContent = state.phase === 'bidding' || state.phase === 'flipping' || state.phase === 'flip_result' ?
     `Bid: ${state.currentBid} by ${state.players[state.highestBidder]?.name || '?'}` : '';
+  document.getElementById('coastersInfo').textContent = state.totalCoastersOnTable > 0 ? `${state.totalCoastersOnTable} on table` : '';
 
   // Message
   renderMessage(me, isMyTurn);
@@ -448,6 +836,39 @@ function renderGame() {
 
   // Log
   renderLog();
+
+  // Track stats for placing
+  if (prevState && state.phase === 'placing' && prevState.totalCoastersOnTable < state.totalCoastersOnTable) {
+    // A card was placed — check if it was mine by comparing my stack count
+    const prevMe = prevState.players[prevState.myIndex];
+    if (prevMe && me.stackCount > prevMe.stackCount) {
+      // I placed a card — we can't tell which, so just count a place
+    }
+  }
+
+  // Track stats for flips
+  if (prevState) {
+    const prevRC = prevState.revealedCards ? prevState.revealedCards.length : 0;
+    const currRC = state.revealedCards ? state.revealedCards.length : 0;
+    if (currRC > prevRC) {
+      const newCard = state.revealedCards[currRC - 1];
+      if (newCard.card === 'skull') StatsTracker.inc('skullsFlipped');
+      else StatsTracker.inc('rosesFlipped');
+    }
+  }
+
+  // Doug button visibility
+  const dougBtn = document.getElementById('dougBtn');
+  const myName = state.players[state.myIndex]?.name || '';
+  dougBtn.style.display = (myName.toLowerCase() === 'pat-wins') ? 'flex' : 'none';
+
+  // Track round wins/losses
+  if (prevState && prevState.roundNum < state.roundNum) {
+    // Round changed — check if we won or lost
+    const prevMe = prevState.players[prevState.myIndex];
+    if (prevMe && me.wins > prevMe.wins) StatsTracker.inc('roundsWon');
+    else if (prevState.phase === 'flip_result' || prevState.phase === 'penalty') StatsTracker.inc('roundsLost');
+  }
 }
 
 function renderMessage(me, isMyTurn) {
@@ -505,8 +926,11 @@ function renderMessage(me, isMyTurn) {
 
 function renderRevealed() {
   const area = document.getElementById('revealedArea');
+  const cards = state.revealedCards || [];
+  // Only re-render if count changed
+  if (area.childElementCount === cards.length) return;
   area.innerHTML = '';
-  (state.revealedCards || []).forEach(rc => {
+  cards.forEach(rc => {
     const div = document.createElement('div');
     div.className = 'revealed-card';
     div.innerHTML = `<div class="coaster ${rc.card}"></div><span class="rc-name">${rc.playerName}</span>`;
@@ -521,6 +945,7 @@ function renderPlayersGrid(me, isMyTurn) {
   state.players.forEach((p, i) => {
     if (p.isMe) return; // skip self — shown below
 
+    const color = PLAYER_COLORS[p.colorIndex % PLAYER_COLORS.length];
     const zone = document.createElement('div');
     let cls = 'player-zone';
     const isActiveTurn = state.phase === 'bidding' ? i === state.highestBidder : state.currentPlayer === i;
@@ -528,6 +953,8 @@ function renderPlayersGrid(me, isMyTurn) {
     if (p.eliminated) cls += ' eliminated';
     if (!p.connected) cls += ' disconnected';
     zone.className = cls;
+    zone.style.borderLeftWidth = '3px';
+    zone.style.borderLeftColor = color;
 
     // Header
     let statusBadge = '';
@@ -537,7 +964,7 @@ function renderPlayersGrid(me, isMyTurn) {
 
     zone.innerHTML = `
       <div class="pz-header">
-        <span class="pz-name">${p.name}</span>
+        <span class="pz-name" style="color:${color}">${p.name}</span>
         <div class="pz-wins">
           <div class="win-pip ${p.wins >= 1 ? 'earned' : ''}"></div>
           <div class="win-pip ${p.wins >= 2 ? 'earned' : ''}"></div>
@@ -548,12 +975,13 @@ function renderPlayersGrid(me, isMyTurn) {
     `;
     grid.appendChild(zone);
 
-    // Stack coasters
+    // Stack coasters — only top (last) coaster is flippable
     const stackRow = zone.querySelector('.stack-row');
     for (let s = 0; s < p.stackCount; s++) {
       const c = document.createElement('div');
-      // Can this be flipped by me?
-      const canFlip = state.phase === 'flipping' &&
+      const isTopCard = (s === p.stackCount - 1);
+      const canFlip = isTopCard &&
+        state.phase === 'flipping' &&
         state.highestBidder === state.myIndex &&
         state.flipsRemaining > 0 &&
         me.stackCount === 0;
@@ -587,18 +1015,23 @@ function renderYourHand(me, isMyTurn) {
       const div = document.createElement('div');
       div.className = `hand-card ${card === 'rose' ? 'rose-card' : 'skull-card'} ${!canPlace ? 'disabled' : ''}`;
       div.innerHTML = card === 'rose' ? '🌹' : '💀';
-      if (canPlace) div.onclick = () => socket.emit('placeCard', idx);
+      if (canPlace) div.onclick = () => {
+        socket.emit('placeCard', idx);
+        if (card === 'rose') StatsTracker.inc('rosesPlaced');
+        else StatsTracker.inc('skullsPlaced');
+      };
       handEl.appendChild(div);
     });
   }
 
-  // Your stack
+  // Your stack — only top coaster flippable
   const stackEl = document.getElementById('yourStack');
   stackEl.innerHTML = '';
   const myP = state.players[state.myIndex];
   for (let s = 0; s < myP.stackCount; s++) {
     const c = document.createElement('div');
-    const canFlipOwn = state.phase === 'flipping' && state.highestBidder === state.myIndex && state.flipsRemaining > 0 && myP.stackCount > 0;
+    const isTopCard = (s === myP.stackCount - 1);
+    const canFlipOwn = isTopCard && state.phase === 'flipping' && state.highestBidder === state.myIndex && state.flipsRemaining > 0 && myP.stackCount > 0;
     c.className = 'coaster facedown' + (canFlipOwn ? ' flippable' : '');
     if (canFlipOwn) c.onclick = () => socket.emit('flipCoaster', state.myIndex);
     stackEl.appendChild(c);
@@ -652,7 +1085,7 @@ function renderActions(me, isMyTurn) {
   if (state.phase === 'placing' && isMyTurn) {
     if (!state.firstPlacement && me.stackCount > 0) {
       const maxBid = state.totalCoastersOnTable;
-      selectedBid = Math.max(1, Math.min(selectedBid, maxBid));
+      selectedBid = 1;
 
       if (maxBid >= 1) {
         const controls = document.createElement('div');
@@ -690,8 +1123,7 @@ function renderActions(me, isMyTurn) {
   if (state.phase === 'bidding' && !me.passed && !me.eliminated && state.myIndex !== state.highestBidder) {
     const minBid = state.currentBid + 1;
     const maxBid = state.totalCoastersOnTable;
-    selectedBid = Math.max(selectedBid, minBid);
-    if (selectedBid > maxBid) selectedBid = maxBid;
+    selectedBid = minBid;
 
     if (minBid <= maxBid) {
       const controls = document.createElement('div');
@@ -733,7 +1165,21 @@ function renderActions(me, isMyTurn) {
 
 function renderLog() {
   const el = document.getElementById('gameLog');
-  el.innerHTML = (state.log || []).map(l => `<div>${l}</div>`).join('');
+  const colors = {};
+  if (state && state.players) {
+    state.players.forEach(p => { colors[p.name] = PLAYER_COLORS[p.colorIndex % PLAYER_COLORS.length]; });
+  }
+  el.innerHTML = (state.log || []).map(l => {
+    // Style chat messages with player color
+    if (l.startsWith('💬 ')) {
+      const match = l.match(/^💬 ([^:]+): (.*)$/);
+      if (match) {
+        const c = colors[match[1]] || 'var(--text-dim)';
+        return `<div><span style="color:${c};font-weight:600;">💬 ${match[1]}:</span> ${match[2]}</div>`;
+      }
+    }
+    return `<div>${l}</div>`;
+  }).join('');
   el.scrollTop = el.scrollHeight;
 }
 
@@ -742,6 +1188,71 @@ function toggleRules() { document.getElementById('rulesModal').classList.toggle(
 // Enter key on inputs
 document.getElementById('nameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { if (document.getElementById('codeInput').value) joinRoom(); } });
 document.getElementById('codeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom(); });
+document.getElementById('chatInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+
+// ── Doug Button ──
+function triggerDoug() {
+  socket.emit('dougLose');
+}
+
+function showDougExplosion() {
+  SoundFX.play('dougExplosion');
+  const overlay = document.getElementById('dougOverlay');
+  overlay.classList.add('active');
+  // Spawn particles
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement('div');
+    p.className = 'doug-particle';
+    const size = Math.random() * 20 + 5;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    const colors = ['#ff0000', '#ff4400', '#ff8800', '#ffcc00', '#ff0066', '#ff2200'];
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.left = '50%';
+    p.style.top = '50%';
+    p.style.opacity = '1';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * 700 + 200;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    p.style.transition = `all ${1 + Math.random()}s ease-out`;
+    overlay.appendChild(p);
+    requestAnimationFrame(() => {
+      p.style.left = `calc(50% + ${dx}px)`;
+      p.style.top = `calc(50% + ${dy}px)`;
+      p.style.opacity = '0';
+    });
+    setTimeout(() => p.remove(), 2000);
+  }
+  setTimeout(() => closeDougOverlay(), 5000);
+}
+
+function closeDougOverlay() {
+  document.getElementById('dougOverlay').classList.remove('active');
+}
+
+socket.on('dougLose', () => {
+  showDougExplosion();
+});
+
+// ── Auto-Rejoin on Reload ──
+(function() {
+  const savedRoom = sessionStorage.getItem('skull_room');
+  const savedName = sessionStorage.getItem('skull_name');
+  if (savedRoom && savedName) {
+    document.getElementById('nameInput').value = savedName;
+    StatsTracker.load(savedName);
+    socket.emit('joinRoom', { name: savedName, code: savedRoom }, (res) => {
+      if (res.success) {
+        document.getElementById('roomCodeDisplay').textContent = res.code;
+        showScreen('waitingScreen');
+      } else {
+        sessionStorage.removeItem('skull_room');
+        sessionStorage.removeItem('skull_name');
+      }
+    });
+  }
+})();
 </script>
 
 </body>
