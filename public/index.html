@@ -458,6 +458,7 @@ const socket = io();
 let state = null;
 let prevState = null;
 let selectedBid = 1;
+let lastSeenBid = -1;
 let prevRevealedCount = 0;
 let timerInterval = null;
 
@@ -1085,7 +1086,8 @@ function renderActions(me, isMyTurn) {
   if (state.phase === 'placing' && isMyTurn) {
     if (!state.firstPlacement && me.stackCount > 0) {
       const maxBid = state.totalCoastersOnTable;
-      selectedBid = 1;
+      if (lastSeenBid !== 0) { selectedBid = 1; lastSeenBid = 0; }
+      selectedBid = Math.max(1, Math.min(selectedBid, maxBid));
 
       if (maxBid >= 1) {
         const controls = document.createElement('div');
@@ -1123,7 +1125,9 @@ function renderActions(me, isMyTurn) {
   if (state.phase === 'bidding' && !me.passed && !me.eliminated && state.myIndex !== state.highestBidder) {
     const minBid = state.currentBid + 1;
     const maxBid = state.totalCoastersOnTable;
-    selectedBid = minBid;
+    if (lastSeenBid !== state.currentBid) { selectedBid = minBid; lastSeenBid = state.currentBid; }
+    selectedBid = Math.max(selectedBid, minBid);
+    if (selectedBid > maxBid) selectedBid = maxBid;
 
     if (minBid <= maxBid) {
       const controls = document.createElement('div');

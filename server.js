@@ -403,21 +403,9 @@ function penalize(room, loserIdx, skullerIdx) {
   room.nextRoundStarter = (loserIdx === skullerIdx) ? loserIdx : skullerIdx;
 
   const p = room.players[loserIdx];
+  addLog(room, `${p.name} loses a coaster at random.`);
 
-  if (loserIdx === skullerIdx) {
-    // Own skull: challenger chooses which card to discard
-    if (p.cards.length > 1) {
-      room.phase = 'penalty';
-      room.penaltyPlayer = loserIdx;
-      addLog(room, `${p.name} hit their own skull — choose a coaster to discard.`);
-      broadcastState(room);
-      return;
-    }
-    // Only 1 card left — no choice needed
-  } else {
-    // Opponent skull: blind random removal
-  }
-
+  // Always random removal
   doCardRemoval(room, loserIdx, -1);
 }
 
