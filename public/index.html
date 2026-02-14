@@ -428,10 +428,10 @@ function renderGame() {
   const isMyTurn = state.currentPlayer === state.myIndex;
 
   // Status bar
-  const phaseNames = { placing: 'Placing Phase', bidding: 'Bidding Phase', flipping: 'Flipping Phase', gameover: 'Game Over' };
+  const phaseNames = { placing: 'Placing Phase', bidding: 'Bidding Phase', flipping: 'Flipping Phase', flip_result: 'Flipping Phase', penalty: 'Penalty', gameover: 'Game Over' };
   document.getElementById('phaseLabel').textContent = phaseNames[state.phase] || '';
   document.getElementById('roundLabel').textContent = `Round ${state.roundNum}`;
-  document.getElementById('bidInfo').textContent = state.phase === 'bidding' || state.phase === 'flipping' ?
+  document.getElementById('bidInfo').textContent = state.phase === 'bidding' || state.phase === 'flipping' || state.phase === 'flip_result' ?
     `Bid: ${state.currentBid} by ${state.players[state.highestBidder]?.name || '?'}` : '';
 
   // Message
@@ -453,6 +453,17 @@ function renderGame() {
 function renderMessage(me, isMyTurn) {
   const area = document.getElementById('messageArea');
   const turnPlayer = state.players[state.currentPlayer];
+
+  if (state.phase === 'penalty') {
+    const penaltyP = state.players[state.penaltyPlayer];
+    if (state.penaltyPlayer === state.myIndex) {
+      area.innerHTML = 'You hit your own skull! <span class="skull-hl">Choose a coaster to discard.</span>';
+    } else {
+      area.innerHTML = `<span class="hl">${penaltyP?.name}</span> is choosing a coaster to discard...`;
+    }
+    return;
+  }
+
   if (!turnPlayer) { area.innerHTML = ''; return; }
 
   if (state.phase === 'placing') {
@@ -478,7 +489,7 @@ function renderMessage(me, isMyTurn) {
     } else {
       area.innerHTML = `<span class="hl">${bidder?.name}</span> bid <span class="hl">${state.currentBid}</span>. Raise or pass!`;
     }
-  } else if (state.phase === 'flipping') {
+  } else if (state.phase === 'flipping' || state.phase === 'flip_result') {
     const flipper = state.players[state.highestBidder];
     if (state.highestBidder === state.myIndex) {
       if (me.stackCount > 0) {
@@ -616,6 +627,26 @@ function renderActions(me, isMyTurn) {
   bar.innerHTML = '';
 
   if (me.eliminated) return;
+
+  // Penalty: show card picker for own-skull penalty
+  if (state.phase === 'penalty' && state.penaltyPlayer === state.myIndex && state.penaltyCards) {
+    const label = document.createElement('div');
+    label.style.cssText = 'width:100%;text-align:center;font-family:Cinzel,serif;color:var(--skull);margin-bottom:8px;';
+    label.textContent = 'Click a coaster to discard it:';
+    bar.appendChild(label);
+
+    const cardRow = document.createElement('div');
+    cardRow.style.cssText = 'display:flex;gap:18px;justify-content:center;flex-wrap:wrap;';
+    state.penaltyCards.forEach((card, idx) => {
+      const div = document.createElement('div');
+      div.className = `hand-card ${card === 'rose' ? 'rose-card' : 'skull-card'}`;
+      div.innerHTML = card === 'rose' ? '🌹' : '💀';
+      div.onclick = () => socket.emit('penaltyDiscard', idx);
+      cardRow.appendChild(div);
+    });
+    bar.appendChild(cardRow);
+    return;
+  }
 
   // Placing: show "Start Bid" with amount picker
   if (state.phase === 'placing' && isMyTurn) {
