@@ -168,6 +168,12 @@
   .coaster.in-hand::after { content: ''; }
   .coaster.flippable { cursor: pointer; animation: pulse 1.5s infinite; }
   .coaster.flippable:hover { transform: scale(1.15); box-shadow: 0 0 14px rgba(212,168,67,0.4); border-color: var(--gold); }
+  .coaster.peekable { cursor: help; }
+  .coaster.peekable:hover::after { font-size: 1.4rem; }
+  .coaster.peek-rose:hover { border-color: var(--rose); box-shadow: 0 0 10px rgba(196,69,105,0.3); }
+  .coaster.peek-rose:hover::after { content: '🌹' !important; }
+  .coaster.peek-skull:hover { border-color: var(--skull); box-shadow: 0 0 10px rgba(139,157,195,0.3); }
+  .coaster.peek-skull:hover::after { content: '💀' !important; }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(212,168,67,0.2); } 50% { box-shadow: 0 0 0 5px rgba(212,168,67,0); } }
 
   /* ── Flip Animation ── */
@@ -461,6 +467,7 @@ let selectedBid = 1;
 let lastSeenBid = -1;
 let prevRevealedCount = 0;
 let timerInterval = null;
+let myStackCards = []; // track what I placed (for peek on hover)
 
 const PLAYER_COLORS = ['#d4a843', '#c44569', '#8b9dc3', '#2ecc71', '#e67e22', '#9b59b6'];
 
@@ -515,13 +522,51 @@ const SoundFX = {
     g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.5);
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.5);
   },
-  // Ascending arpeggio
-  winPoint(c, t) {
-    [523, 659, 784, 1047].forEach((f, i) => {
+  // FF7 Victory Fanfare
+  ff7Victory(c, t) {
+    const notes = [
+      [466,0.10],[466,0.10],[466,0.10],[466,0.20],
+      [370,0.14],[415,0.14],[466,0.45],
+      [415,0.14],[466,0.55]
+    ];
+    let time = t;
+    notes.forEach(([freq, dur]) => {
       const o = c.createOscillator(); const g = c.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(f, t + i*0.1);
-      g.gain.setValueAtTime(0.12, t + i*0.1); g.gain.exponentialRampToValueAtTime(0.001, t + i*0.1 + 0.4);
-      o.connect(g); g.connect(c.destination); o.start(t + i*0.1); o.stop(t + i*0.1 + 0.4);
+      o.type = 'square'; o.frequency.setValueAtTime(freq, time);
+      g.gain.setValueAtTime(0.10, time); g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      o.connect(g); g.connect(c.destination); o.start(time); o.stop(time + dur + 0.01);
+      // harmony
+      const o2 = c.createOscillator(); const g2 = c.createGain();
+      o2.type = 'triangle'; o2.frequency.setValueAtTime(freq * 0.5, time);
+      g2.gain.setValueAtTime(0.06, time); g2.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      o2.connect(g2); g2.connect(c.destination); o2.start(time); o2.stop(time + dur + 0.01);
+      time += dur + 0.02;
+    });
+  },
+  // Ewok Celebration (Yub Nub)
+  ewokCelebration(c, t) {
+    const notes = [
+      [392,0.13],[392,0.13],[440,0.13],[494,0.22],
+      [392,0.13],[330,0.13],[330,0.13],[392,0.13],
+      [440,0.28],[392,0.11],[440,0.11],[494,0.11],
+      [587,0.22],[523,0.13],[494,0.13],[440,0.13],[392,0.38]
+    ];
+    let time = t;
+    notes.forEach(([freq, dur], i) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(freq, time);
+      g.gain.setValueAtTime(0.14, time); g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      o.connect(g); g.connect(c.destination); o.start(time); o.stop(time + dur + 0.01);
+      // Add a light percussion hit on downbeats
+      if (i % 4 === 0) {
+        const buf = c.createBuffer(1, c.sampleRate * 0.05, c.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * Math.exp(-j / (c.sampleRate * 0.01));
+        const src = c.createBufferSource(); src.buffer = buf;
+        const gn = c.createGain(); gn.gain.setValueAtTime(0.08, time); gn.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+        src.connect(gn); gn.connect(c.destination); src.start(time);
+      }
+      time += dur + 0.03;
     });
   },
   // Dark descending
@@ -720,7 +765,10 @@ function detectSounds(prev, curr) {
   if (currLogLen > prevLogLen) {
     const newLogs = curr.log.slice(prevLogLen);
     for (const l of newLogs) {
-      if (l.includes('wins a point')) SoundFX.play('winPoint');
+      if (l.includes('wins a point')) {
+        if (l.toLowerCase().includes('ewok')) SoundFX.play('ewokCelebration');
+        else SoundFX.play('ff7Victory');
+      }
       else if (l.includes('is eliminated')) SoundFX.play('eliminated');
       else if (l.includes('passed')) SoundFX.play('pass');
       else if (l.startsWith('💬') && !l.includes(curr.players[curr.myIndex]?.name + ':')) SoundFX.play('chat');
@@ -755,6 +803,10 @@ socket.on('gameState', (s) => {
   prevState = state;
   state = s;
   detectSounds(prevState, s);
+  // Reset stack tracking on new round
+  if (s.started && s.players[s.myIndex] && s.players[s.myIndex].stackCount === 0) {
+    myStackCards = [];
+  }
   if (!s.started) {
     renderWaiting();
   } else {
@@ -1017,6 +1069,7 @@ function renderYourHand(me, isMyTurn) {
       div.className = `hand-card ${card === 'rose' ? 'rose-card' : 'skull-card'} ${!canPlace ? 'disabled' : ''}`;
       div.innerHTML = card === 'rose' ? '🌹' : '💀';
       if (canPlace) div.onclick = () => {
+        myStackCards.push(card);
         socket.emit('placeCard', idx);
         if (card === 'rose') StatsTracker.inc('rosesPlaced');
         else StatsTracker.inc('skullsPlaced');
@@ -1033,7 +1086,13 @@ function renderYourHand(me, isMyTurn) {
     const c = document.createElement('div');
     const isTopCard = (s === myP.stackCount - 1);
     const canFlipOwn = isTopCard && state.phase === 'flipping' && state.highestBidder === state.myIndex && state.flipsRemaining > 0 && myP.stackCount > 0;
-    c.className = 'coaster facedown' + (canFlipOwn ? ' flippable' : '');
+    let cls = 'coaster facedown';
+    if (canFlipOwn) cls += ' flippable';
+    // Peek on hover for your own stack
+    if (myStackCards[s]) {
+      cls += ' peekable peek-' + myStackCards[s];
+    }
+    c.className = cls;
     if (canFlipOwn) c.onclick = () => socket.emit('flipCoaster', state.myIndex);
     stackEl.appendChild(c);
   }
