@@ -23,7 +23,7 @@ function genCode() {
 function newRoom(code, hostId, hostName) {
   return {
     code,
-    players: [{ id: hostId, name: hostName, cards: [], hand: [], stack: [], wins: 0, eliminated: false, passed: false, connected: true }],
+    players: [{ id: hostId, name: hostName, cards: [], hand: [], stack: [], wins: 0, eliminated: false, passed: false, connected: true, colorIndex: 0 }],
     hostId,
     started: false,
     phase: null,         // placing | bidding | flipping
@@ -36,6 +36,8 @@ function newRoom(code, hostId, hostName) {
     firstPlacement: true,
     nextRoundStarter: -1,
     penaltyPlayer: -1,
+    turnDeadline: 0,     // timestamp (ms) when current turn expires
+    turnTimer: null,     // setTimeout handle for auto-action
     log: [],
     revealedCards: [],   // { playerIndex, card } for flip animations
   };
@@ -82,6 +84,25 @@ function addLog(room, msg) {
   if (room.log.length > 100) room.log.shift();
 }
 
+function clearTurnTimer(room) {
+  if (room.turnTimer) { clearTimeout(room.turnTimer); room.turnTimer = null; }
+  room.turnDeadline = 0;
+}
+
+function startTurnTimer(room, seconds, callback) {
+  clearTurnTimer(room);
+  room.turnDeadline = Date.now() + seconds * 1000;
+  room.turnTimer = setTimeout(() => {
+    room.turnTimer = null;
+    room.turnDeadline = 0;
+    callback();
+  }, seconds * 1000);
+}
+
+function sanitizeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 // ── Sanitize state for a specific player (hide other hands) ──
 function stateForPlayer(room, socketId) {
   const myIdx = playerIndex(room, socketId);
@@ -99,6 +120,7 @@ function stateForPlayer(room, socketId) {
       passed: p.passed,
       connected: p.connected,
       isMe: i === myIdx,
+      colorIndex: p.colorIndex,
     })),
     hostId: room.hostId,
     isHost: socketId === room.hostId,
@@ -115,6 +137,7 @@ function stateForPlayer(room, socketId) {
     revealedCards: room.revealedCards,
     penaltyPlayer: room.penaltyPlayer,
     penaltyCards: (room.phase === 'penalty' && room.penaltyPlayer === myIdx) ? room.players[myIdx].cards : null,
+    turnDeadline: room.turnDeadline,
   };
 }
 
@@ -143,6 +166,7 @@ function startGame(room) {
 }
 
 function startRound(room) {
+  clearTurnTimer(room);
   room.roundNum++;
   room.phase = 'placing';
   room.currentBid = 0;
@@ -168,6 +192,16 @@ function startRound(room) {
   }
   room.nextRoundStarter = -1;
   addLog(room, `— Round ${room.roundNum} —`);
+
+  // Start 20s timer for first player's turn
+  const firstPlayer = room.currentPlayer;
+  startTurnTimer(room, 20, () => {
+    if (room.phase !== 'placing' || room.currentPlayer !== firstPlayer) return;
+    const p = room.players[firstPlayer];
+    if (p.hand.length > 0) {
+      handlePlace(room, firstPlayer, 0);
+    }
+  });
   broadcastState(room);
 }
 
@@ -193,16 +227,29 @@ function advancePlacing(room) {
   let next = nextActiveUnpassed(room, room.currentPlayer);
   if (next === -1) next = findNextActive(room, 0);
   room.currentPlayer = next;
-  broadcastState(room);
 
   // If the next player has no cards in hand, they must bid
   const nextPlayer = room.players[next];
   if (nextPlayer && !nextPlayer.eliminated && nextPlayer.hand.length === 0 && room.phase === 'placing' && !room.firstPlacement) {
+    clearTurnTimer(room);
+    broadcastState(room);
     setTimeout(() => {
       if (room.phase === 'placing' && room.currentPlayer === next) {
         handleStartBid(room, next, 1);
       }
     }, 800);
+  } else {
+    // 20s timer for placing turn
+    startTurnTimer(room, 20, () => {
+      if (room.phase !== 'placing' || room.currentPlayer !== next) return;
+      // Auto-bid 1 if allowed, otherwise auto-place first card
+      if (!room.firstPlacement && nextPlayer.stack.length > 0) {
+        handleStartBid(room, next, 1);
+      } else if (nextPlayer.hand.length > 0) {
+        handlePlace(room, next, 0);
+      }
+    });
+    broadcastState(room);
   }
 }
 
@@ -212,7 +259,8 @@ function handleStartBid(room, pIdx, amount) {
   const p = room.players[pIdx];
   if (room.firstPlacement) return;
 
-  const maxBid = countOnTable(room);
+  room.totalCoastersOnTable = countOnTable(room);
+  const maxBid = room.totalCoastersOnTable;
   const bidAmount = Math.max(1, Math.min(amount || 1, maxBid));
 
   room.phase = 'bidding';
@@ -223,6 +271,7 @@ function handleStartBid(room, pIdx, amount) {
 
   addLog(room, `${p.name} opened bidding at ${bidAmount}.`);
   room.currentPlayer = -1; // no turn order in bidding
+  startBidTimer(room);
   checkBiddingEnd(room);
 }
 
@@ -233,16 +282,32 @@ function players_passed_set_bidder(room, bidderIdx) {
   });
 }
 
+function startBidTimer(room) {
+  startTurnTimer(room, 20, () => {
+    if (room.phase !== 'bidding') return;
+    // Auto-pass all non-highest-bidder players who haven't passed
+    room.players.forEach((p, i) => {
+      if (!p.eliminated && !p.passed && i !== room.highestBidder) {
+        p.passed = true;
+        addLog(room, `${p.name} auto-passed (time).`);
+      }
+    });
+    checkBiddingEnd(room);
+  });
+}
+
 function handleRaiseBid(room, pIdx, amount) {
   if (room.phase !== 'bidding') return;
   const p = room.players[pIdx];
   if (p.passed || p.eliminated) return;
   if (pIdx === room.highestBidder) return; // can't outbid yourself
+  room.totalCoastersOnTable = countOnTable(room);
   if (amount <= room.currentBid || amount > room.totalCoastersOnTable) return;
 
   room.currentBid = amount;
   room.highestBidder = pIdx;
   addLog(room, `${p.name} bid ${amount}.`);
+  startBidTimer(room);
   checkBiddingEnd(room);
 }
 
@@ -260,6 +325,7 @@ function handlePass(room, pIdx) {
 function checkBiddingEnd(room) {
   // Bidding ends when all players except the highest bidder have passed,
   // or the bid equals total coasters on table
+  room.totalCoastersOnTable = countOnTable(room);
   const active = room.players.filter((p, i) => !p.eliminated && !p.passed && i !== room.highestBidder);
   if (active.length === 0 || room.currentBid >= room.totalCoastersOnTable) {
     startFlipping(room);
@@ -269,6 +335,7 @@ function checkBiddingEnd(room) {
 }
 
 function startFlipping(room) {
+  clearTurnTimer(room);
   room.phase = 'flipping';
   room.flipsRemaining = room.currentBid;
   room.currentPlayer = room.highestBidder;
@@ -388,6 +455,7 @@ function handlePenaltyDiscard(room, pIdx, cardIndex) {
 }
 
 function gameOver(room, winnerIdx) {
+  clearTurnTimer(room);
   room.phase = 'gameover';
   const winner = room.players[winnerIdx];
   addLog(room, `═══ ${winner.name} WINS THE GAME! ═══`);
@@ -431,7 +499,7 @@ io.on('connection', (socket) => {
     if (room.players.length >= 6) return cb({ success: false, error: 'Room is full (max 6).' });
     if (room.players.find(p => p.name === name)) return cb({ success: false, error: 'Name already taken.' });
 
-    room.players.push({ id: socket.id, name, cards: [], hand: [], stack: [], wins: 0, eliminated: false, passed: false, connected: true });
+    room.players.push({ id: socket.id, name, cards: [], hand: [], stack: [], wins: 0, eliminated: false, passed: false, connected: true, colorIndex: room.players.length });
     socket.join(code);
     socket.roomCode = code;
     cb({ success: true, code });
@@ -485,6 +553,21 @@ io.on('connection', (socket) => {
     const pIdx = playerIndex(room, socket.id);
     if (pIdx === -1) return;
     handleFlip(room, pIdx, targetIdx);
+  });
+
+  socket.on('chatMessage', (msg) => {
+    const room = getRoom(socket);
+    if (!room) return;
+    const pIdx = playerIndex(room, socket.id);
+    if (pIdx === -1) return;
+    const p = room.players[pIdx];
+    const text = sanitizeHtml((msg || '').toString().trim().slice(0, 200));
+    if (!text) return;
+    const now = Date.now();
+    if (p.lastChatTime && now - p.lastChatTime < 1000) return; // rate limit
+    p.lastChatTime = now;
+    addLog(room, `💬 ${p.name}: ${text}`);
+    broadcastState(room);
   });
 
   socket.on('penaltyDiscard', (cardIndex) => {
