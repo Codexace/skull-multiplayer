@@ -515,13 +515,51 @@ const SoundFX = {
     g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.5);
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.5);
   },
-  // Ascending arpeggio
-  winPoint(c, t) {
-    [523, 659, 784, 1047].forEach((f, i) => {
+  // FF7 Victory Fanfare
+  ff7Victory(c, t) {
+    const notes = [
+      [466,0.10],[466,0.10],[466,0.10],[466,0.20],
+      [370,0.14],[415,0.14],[466,0.45],
+      [415,0.14],[466,0.55]
+    ];
+    let time = t;
+    notes.forEach(([freq, dur]) => {
       const o = c.createOscillator(); const g = c.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(f, t + i*0.1);
-      g.gain.setValueAtTime(0.12, t + i*0.1); g.gain.exponentialRampToValueAtTime(0.001, t + i*0.1 + 0.4);
-      o.connect(g); g.connect(c.destination); o.start(t + i*0.1); o.stop(t + i*0.1 + 0.4);
+      o.type = 'square'; o.frequency.setValueAtTime(freq, time);
+      g.gain.setValueAtTime(0.10, time); g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      o.connect(g); g.connect(c.destination); o.start(time); o.stop(time + dur + 0.01);
+      // harmony
+      const o2 = c.createOscillator(); const g2 = c.createGain();
+      o2.type = 'triangle'; o2.frequency.setValueAtTime(freq * 0.5, time);
+      g2.gain.setValueAtTime(0.06, time); g2.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      o2.connect(g2); g2.connect(c.destination); o2.start(time); o2.stop(time + dur + 0.01);
+      time += dur + 0.02;
+    });
+  },
+  // Ewok Celebration (Yub Nub)
+  ewokCelebration(c, t) {
+    const notes = [
+      [392,0.13],[392,0.13],[440,0.13],[494,0.22],
+      [392,0.13],[330,0.13],[330,0.13],[392,0.13],
+      [440,0.28],[392,0.11],[440,0.11],[494,0.11],
+      [587,0.22],[523,0.13],[494,0.13],[440,0.13],[392,0.38]
+    ];
+    let time = t;
+    notes.forEach(([freq, dur], i) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(freq, time);
+      g.gain.setValueAtTime(0.14, time); g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      o.connect(g); g.connect(c.destination); o.start(time); o.stop(time + dur + 0.01);
+      // Add a light percussion hit on downbeats
+      if (i % 4 === 0) {
+        const buf = c.createBuffer(1, c.sampleRate * 0.05, c.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * Math.exp(-j / (c.sampleRate * 0.01));
+        const src = c.createBufferSource(); src.buffer = buf;
+        const gn = c.createGain(); gn.gain.setValueAtTime(0.08, time); gn.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+        src.connect(gn); gn.connect(c.destination); src.start(time);
+      }
+      time += dur + 0.03;
     });
   },
   // Dark descending
@@ -720,7 +758,10 @@ function detectSounds(prev, curr) {
   if (currLogLen > prevLogLen) {
     const newLogs = curr.log.slice(prevLogLen);
     for (const l of newLogs) {
-      if (l.includes('wins a point')) SoundFX.play('winPoint');
+      if (l.includes('wins a point')) {
+        if (l.toLowerCase().includes('ewok')) SoundFX.play('ewokCelebration');
+        else SoundFX.play('ff7Victory');
+      }
       else if (l.includes('is eliminated')) SoundFX.play('eliminated');
       else if (l.includes('passed')) SoundFX.play('pass');
       else if (l.startsWith('💬') && !l.includes(curr.players[curr.myIndex]?.name + ':')) SoundFX.play('chat');
