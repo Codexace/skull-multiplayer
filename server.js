@@ -34,6 +34,8 @@ function newRoom(code, hostId, hostName) {
     totalCoastersOnTable: 0,
     roundNum: 0,
     firstPlacement: true,
+    nextRoundStarter: -1,
+    penaltyPlayer: -1,
     log: [],
     revealedCards: [],   // { playerIndex, card } for flip animations
   };
@@ -111,6 +113,8 @@ function stateForPlayer(room, socketId) {
     firstPlacement: room.firstPlacement,
     log: room.log.slice(-40),
     revealedCards: room.revealedCards,
+    penaltyPlayer: room.penaltyPlayer,
+    penaltyCards: (room.phase === 'penalty' && room.penaltyPlayer === myIdx) ? room.players[myIdx].cards : null,
   };
 }
 
@@ -156,8 +160,13 @@ function startRound(room) {
     }
   });
 
-  // First active player starts (rotate start each round)
-  room.currentPlayer = findNextActive(room, (room.roundNum - 1) % room.players.length);
+  // First player: use nextRoundStarter if set, otherwise rotate
+  if (room.nextRoundStarter >= 0 && !room.players[room.nextRoundStarter].eliminated) {
+    room.currentPlayer = room.nextRoundStarter;
+  } else {
+    room.currentPlayer = findNextActive(room, (room.roundNum - 1) % room.players.length);
+  }
+  room.nextRoundStarter = -1;
   addLog(room, `— Round ${room.roundNum} —`);
   broadcastState(room);
 }
@@ -185,6 +194,16 @@ function advancePlacing(room) {
   if (next === -1) next = findNextActive(room, 0);
   room.currentPlayer = next;
   broadcastState(room);
+
+  // If the next player has no cards in hand, they must bid
+  const nextPlayer = room.players[next];
+  if (nextPlayer && !nextPlayer.eliminated && nextPlayer.hand.length === 0 && room.phase === 'placing' && !room.firstPlacement) {
+    setTimeout(() => {
+      if (room.phase === 'placing' && room.currentPlayer === next) {
+        handleStartBid(room, next, 1);
+      }
+    }, 800);
+  }
 }
 
 function handleStartBid(room, pIdx, amount) {
@@ -261,6 +280,7 @@ function startFlipping(room) {
 
 function handleFlip(room, flipperIdx, targetPlayerIdx) {
   if (room.phase !== 'flipping') return;
+  if (room.flipsRemaining <= 0) return;
   if (flipperIdx !== room.highestBidder) return;
   if (room.currentPlayer !== flipperIdx) return;
 
@@ -278,6 +298,7 @@ function handleFlip(room, flipperIdx, targetPlayerIdx) {
   room.revealedCards.push({ playerIndex: targetPlayerIdx, card, playerName: target.name });
 
   if (card === 'skull') {
+    room.phase = 'flip_result';
     addLog(room, `💀 ${flipper.name} flipped ${target.name}'s SKULL!`);
     broadcastState(room);
     setTimeout(() => {
@@ -286,6 +307,7 @@ function handleFlip(room, flipperIdx, targetPlayerIdx) {
   } else {
     addLog(room, `🌹 ${flipper.name} flipped ${target.name}'s Rose.`);
     if (room.flipsRemaining <= 0) {
+      room.phase = 'flip_result';
       broadcastState(room);
       setTimeout(() => {
         challengeSuccess(room, flipperIdx);
@@ -299,6 +321,7 @@ function handleFlip(room, flipperIdx, targetPlayerIdx) {
 function challengeSuccess(room, pIdx) {
   const p = room.players[pIdx];
   p.wins++;
+  room.nextRoundStarter = pIdx;
   addLog(room, `🏆 ${p.name} wins a point! (${p.wins}/2)`);
   if (p.wins >= 2) {
     gameOver(room, pIdx);
@@ -309,9 +332,32 @@ function challengeSuccess(room, pIdx) {
 }
 
 function penalize(room, loserIdx, skullerIdx) {
+  // Skull owner starts next round; if own skull, challenger starts
+  room.nextRoundStarter = (loserIdx === skullerIdx) ? loserIdx : skullerIdx;
+
+  const p = room.players[loserIdx];
+
+  if (loserIdx === skullerIdx) {
+    // Own skull: challenger chooses which card to discard
+    if (p.cards.length > 1) {
+      room.phase = 'penalty';
+      room.penaltyPlayer = loserIdx;
+      addLog(room, `${p.name} hit their own skull — choose a coaster to discard.`);
+      broadcastState(room);
+      return;
+    }
+    // Only 1 card left — no choice needed
+  } else {
+    // Opponent skull: blind random removal
+  }
+
+  doCardRemoval(room, loserIdx, -1);
+}
+
+function doCardRemoval(room, loserIdx, chosenIdx) {
   const p = room.players[loserIdx];
   if (p.cards.length > 0) {
-    const removeIdx = Math.floor(Math.random() * p.cards.length);
+    const removeIdx = (chosenIdx >= 0 && chosenIdx < p.cards.length) ? chosenIdx : Math.floor(Math.random() * p.cards.length);
     const removed = p.cards.splice(removeIdx, 1)[0];
     addLog(room, `${p.name} loses a coaster. ${p.cards.length} remaining.`);
   }
@@ -322,6 +368,8 @@ function penalize(room, loserIdx, skullerIdx) {
     addLog(room, `☠ ${p.name} is eliminated!`);
   }
 
+  room.penaltyPlayer = -1;
+
   const alive = room.players.filter(pl => !pl.eliminated);
   if (alive.length <= 1) {
     gameOver(room, room.players.indexOf(alive[0]));
@@ -329,6 +377,14 @@ function penalize(room, loserIdx, skullerIdx) {
   }
   broadcastState(room);
   setTimeout(() => startRound(room), 2000);
+}
+
+function handlePenaltyDiscard(room, pIdx, cardIndex) {
+  if (room.phase !== 'penalty') return;
+  if (room.penaltyPlayer !== pIdx) return;
+  const p = room.players[pIdx];
+  if (cardIndex < 0 || cardIndex >= p.cards.length) return;
+  doCardRemoval(room, pIdx, cardIndex);
 }
 
 function gameOver(room, winnerIdx) {
@@ -429,6 +485,14 @@ io.on('connection', (socket) => {
     const pIdx = playerIndex(room, socket.id);
     if (pIdx === -1) return;
     handleFlip(room, pIdx, targetIdx);
+  });
+
+  socket.on('penaltyDiscard', (cardIndex) => {
+    const room = getRoom(socket);
+    if (!room || !room.started) return;
+    const pIdx = playerIndex(room, socket.id);
+    if (pIdx === -1) return;
+    handlePenaltyDiscard(room, pIdx, cardIndex);
   });
 
   socket.on('playAgain', () => {
